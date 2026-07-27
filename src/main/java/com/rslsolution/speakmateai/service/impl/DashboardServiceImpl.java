@@ -636,4 +636,21 @@ public class DashboardServiceImpl implements DashboardService {
 		return activities;
 	}
 
+	@Override
+	public DashboardOverviewResponse getDashboardOverview() {
+		long totalUsers = userRepository.count();
+		long schoolUsers = userRepository.countByUserType("School");
+		long activeUsers = userRepository.countByActiveTrue();
+		long inactiveUsers = userRepository.countByActiveFalse();
+		long newUsers = userRepository.countByCreatedAtAfter(LocalDateTime.now().minusDays(7));
+
+		return DashboardOverviewResponse.builder()
+				.totalUsers((int) totalUsers)
+				.schoolUsers((int) schoolUsers)
+				.activeUsers((int) activeUsers)
+				.inactiveUsers((int) inactiveUsers)
+				.newUsers((int) newUsers)
+				.build();
+	}
+
 }

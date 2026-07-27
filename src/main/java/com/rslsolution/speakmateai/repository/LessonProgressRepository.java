@@ -1,9 +1,12 @@
 package com.rslsolution.speakmateai.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.rslsolution.speakmateai.entity.Lesson;
@@ -22,4 +25,10 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
 	List<LessonProgress> findByUserOrderByLastOpenedAtDesc(User user);
 
 	boolean existsByUserAndLesson(User user, Lesson lesson);
+
+	long countByCompletedTrue();
+
+	@Query("SELECT DATE(lp.completedAt) as date, COUNT(lp) as count FROM LessonProgress lp WHERE lp.completed = true AND lp.completedAt BETWEEN :start AND :end GROUP BY DATE(lp.completedAt)")
+	List<Object[]> countCompletedByDateBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
 }
