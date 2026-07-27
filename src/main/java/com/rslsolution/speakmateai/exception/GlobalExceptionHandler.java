@@ -184,6 +184,7 @@ public class GlobalExceptionHandler {
 		logException("handleInvalidCredentials", ex);
 
 		Map<String, Object> response = new HashMap<>();
+		response.put("success", false);
 		response.put("timestamp", LocalDateTime.now());
 		response.put("status", HttpStatus.UNAUTHORIZED.value());
 		response.put("message", ex.getMessage());
@@ -208,6 +209,7 @@ public class GlobalExceptionHandler {
 		logException("handleIllegalArgument", ex);
 
 		Map<String, Object> response = new HashMap<>();
+		response.put("success", false);
 		response.put("timestamp", LocalDateTime.now());
 		response.put("status", HttpStatus.BAD_REQUEST.value());
 		response.put("message", ex.getMessage());
