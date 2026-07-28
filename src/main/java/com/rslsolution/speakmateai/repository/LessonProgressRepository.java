@@ -31,4 +31,10 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
 	@Query("SELECT DATE(lp.completedAt) as date, COUNT(lp) as count FROM LessonProgress lp WHERE lp.completed = true AND lp.completedAt BETWEEN :start AND :end GROUP BY DATE(lp.completedAt)")
 	List<Object[]> countCompletedByDateBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
+	@Query("SELECT COUNT(lp) FROM LessonProgress lp WHERE lp.completed = true AND lp.user.school.id = :schoolId")
+	long countByUserSchoolIdAndCompletedTrue(@Param("schoolId") Long schoolId);
+
+	@Query("SELECT COUNT(lp) FROM LessonProgress lp WHERE lp.user.school.id = :schoolId")
+	long countByUserSchoolId(@Param("schoolId") Long schoolId);
+
 }

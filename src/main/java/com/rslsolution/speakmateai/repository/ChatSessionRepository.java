@@ -21,4 +21,7 @@ public interface ChatSessionRepository extends JpaRepository<ChatSession, Long> 
 	@Query("SELECT DATE(cs.createdAt) as date, COUNT(cs) as count FROM ChatSession cs WHERE cs.createdAt BETWEEN :start AND :end GROUP BY DATE(cs.createdAt)")
 	List<Object[]> countByCreatedAtDateBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
+	@Query("SELECT COUNT(cs) FROM ChatSession cs WHERE cs.user.school.id = :schoolId")
+	long countByUserSchoolId(@Param("schoolId") Long schoolId);
+
 }

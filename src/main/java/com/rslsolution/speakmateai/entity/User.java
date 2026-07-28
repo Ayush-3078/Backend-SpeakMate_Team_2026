@@ -12,6 +12,8 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -114,6 +116,10 @@ public class User {
 	private String userType;
 
 	private String interests;
+
+	@ManyToOne
+	@JoinColumn(name = "school_id")
+	private School school;
 
 	@OneToMany(mappedBy = "user", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
 	private java.util.List<Progress> progressList;
@@ -230,6 +236,9 @@ public class User {
 	public String getInterests() { return interests; }
 	public void setInterests(String interests) { this.interests = interests; }
 
+	public School getSchool() { return school; }
+	public void setSchool(School school) { this.school = school; }
+
 	public String getExpoPushToken() { return expoPushToken; }
 	public void setExpoPushToken(String expoPushToken) { this.expoPushToken = expoPushToken; }
 
@@ -292,6 +301,7 @@ public class User {
 		public UserBuilder ageGroup(String ageGroup) { this.ageGroup = ageGroup; return this; }
 		public UserBuilder userType(String userType) { this.userType = userType; return this; }
 		public UserBuilder interests(String interests) { this.interests = interests; return this; }
+		public UserBuilder school(School school) { this.school = school; return this; }
 		public UserBuilder expoPushToken(String expoPushToken) { this.expoPushToken = expoPushToken; return this; }
 
 		public User build() {
@@ -322,6 +332,7 @@ public class User {
 			user.setAgeGroup(ageGroup);
 			user.setUserType(userType);
 			user.setInterests(interests);
+			user.setSchool(school);
 			user.setExpoPushToken(expoPushToken);
 			return user;
 		}

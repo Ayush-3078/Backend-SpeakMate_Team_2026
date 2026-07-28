@@ -54,4 +54,18 @@ public interface UserRepository extends JpaRepository<User, Long> {
 	@Query("SELECT DATE(u.updatedAt) as date, COUNT(u) as count FROM User u WHERE u.updatedAt BETWEEN :start AND :end GROUP BY DATE(u.updatedAt)")
 	List<Object[]> countActiveByUpdatedAtDateBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
+	List<User> findBySchoolId(Long schoolId);
+
+	long countBySchoolId(Long schoolId);
+
+	long countBySchoolIdAndActiveTrue(Long schoolId);
+
+	List<User> findBySchoolIdAndUserType(Long schoolId, String userType);
+
+	long countBySchoolIdAndUserType(Long schoolId, String userType);
+
+	long countBySchoolIdAndUserTypeAndActiveTrue(Long schoolId, String userType);
+
+	long countBySchoolIdAndUserTypeAndActiveFalse(Long schoolId, String userType);
+
 }
