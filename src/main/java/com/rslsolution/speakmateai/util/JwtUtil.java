@@ -33,6 +33,18 @@ public class JwtUtil {
 				.compact();
 	}
 
+	public String generateAdminToken(String email, String role, Long adminId) {
+		return Jwts.builder()
+				.setSubject(email)
+				.claim("role", role)
+				.claim("adminId", adminId)
+				.claim("type", "ADMIN")
+				.setIssuedAt(new Date())
+				.setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
+				.signWith(getSigningKey(), SignatureAlgorithm.HS256)
+				.compact();
+	}
+
 	public String extractEmail(String token) {
 		return extractClaims(token).getSubject();
 	}
@@ -45,7 +57,7 @@ public class JwtUtil {
 		return extractClaims(token).getExpiration().before(new Date());
 	}
 
-	private Claims extractClaims(String token) {
+	public Claims extractClaims(String token) {
 		return Jwts.parserBuilder()
 				.setSigningKey(getSigningKey())
 				.build()
