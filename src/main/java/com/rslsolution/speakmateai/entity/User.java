@@ -3,6 +3,7 @@ package com.rslsolution.speakmateai.entity;
 import java.time.LocalDateTime;
 
 import com.rslsolution.speakmateai.enums.Role;
+import com.rslsolution.speakmateai.enums.UserType;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -58,6 +59,11 @@ public class User {
 	@Column(nullable = false)
 	private Role role;
 
+	@Builder.Default
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private UserType userType = UserType.STANDARD;
+
 	@Column(columnDefinition = "TEXT")
 	private String avatar;
 
@@ -112,6 +118,21 @@ public class User {
 	private String ageGroup;
 
 	private String interests;
+
+	// School User fields
+	private String phone;
+	
+	private String schoolName;
+	
+	private String standard;
+	
+	private String division;
+	
+	private String rollNumber;
+	
+	private String parentName;
+	
+	private String parentPhone;
 
 	@OneToMany(mappedBy = "user", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
 	private java.util.List<Progress> progressList;
@@ -222,8 +243,32 @@ public class User {
 	public String getInterests() { return interests; }
 	public void setInterests(String interests) { this.interests = interests; }
 
+	public String getPhone() { return phone; }
+	public void setPhone(String phone) { this.phone = phone; }
+
+	public String getSchoolName() { return schoolName; }
+	public void setSchoolName(String schoolName) { this.schoolName = schoolName; }
+
+	public String getStandard() { return standard; }
+	public void setStandard(String standard) { this.standard = standard; }
+
+	public String getDivision() { return division; }
+	public void setDivision(String division) { this.division = division; }
+
+	public String getRollNumber() { return rollNumber; }
+	public void setRollNumber(String rollNumber) { this.rollNumber = rollNumber; }
+
+	public String getParentName() { return parentName; }
+	public void setParentName(String parentName) { this.parentName = parentName; }
+
+	public String getParentPhone() { return parentPhone; }
+	public void setParentPhone(String parentPhone) { this.parentPhone = parentPhone; }
+
 	public String getExpoPushToken() { return expoPushToken; }
 	public void setExpoPushToken(String expoPushToken) { this.expoPushToken = expoPushToken; }
+
+	public UserType getUserType() { return userType; }
+	public void setUserType(UserType userType) { this.userType = userType; }
 
 	public static UserBuilder builder() {
 		return new UserBuilder();
@@ -255,6 +300,14 @@ public class User {
 		private String preferredAccent;
 		private String interests;
 		private String expoPushToken;
+		private UserType userType = UserType.STANDARD;
+		private String phone;
+		private String schoolName;
+		private String standard;
+		private String division;
+		private String rollNumber;
+		private String parentName;
+		private String parentPhone;
 
 		public UserBuilder id(Long id) { this.id = id; return this; }
 		public UserBuilder firstName(String firstName) { this.firstName = firstName; return this; }
@@ -281,6 +334,14 @@ public class User {
 		public UserBuilder preferredAccent(String preferredAccent) { this.preferredAccent = preferredAccent; return this; }
 		public UserBuilder interests(String interests) { this.interests = interests; return this; }
 		public UserBuilder expoPushToken(String expoPushToken) { this.expoPushToken = expoPushToken; return this; }
+		public UserBuilder userType(UserType userType) { this.userType = userType; return this; }
+		public UserBuilder phone(String phone) { this.phone = phone; return this; }
+		public UserBuilder schoolName(String schoolName) { this.schoolName = schoolName; return this; }
+		public UserBuilder standard(String standard) { this.standard = standard; return this; }
+		public UserBuilder division(String division) { this.division = division; return this; }
+		public UserBuilder rollNumber(String rollNumber) { this.rollNumber = rollNumber; return this; }
+		public UserBuilder parentName(String parentName) { this.parentName = parentName; return this; }
+		public UserBuilder parentPhone(String parentPhone) { this.parentPhone = parentPhone; return this; }
 
 		public User build() {
 			User user = new User();
@@ -309,6 +370,14 @@ public class User {
 			user.setPreferredAccent(preferredAccent);
 			user.setInterests(interests);
 			user.setExpoPushToken(expoPushToken);
+			user.setUserType(userType);
+			user.setPhone(phone);
+			user.setSchoolName(schoolName);
+			user.setStandard(standard);
+			user.setDivision(division);
+			user.setRollNumber(rollNumber);
+			user.setParentName(parentName);
+			user.setParentPhone(parentPhone);
 			return user;
 		}
 	}
