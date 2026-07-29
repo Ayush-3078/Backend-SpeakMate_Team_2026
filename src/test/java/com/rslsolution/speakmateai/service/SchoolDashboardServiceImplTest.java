@@ -81,7 +81,7 @@ public class SchoolDashboardServiceImplTest {
 		User user = User.builder()
 				.id(1L)
 				.email("schooladmin@test.com")
-				.role(Role.ADMIN)
+				.role(Role.SUPER_ADMIN)
 				.school(school)
 				.build();
 
@@ -119,7 +119,7 @@ public class SchoolDashboardServiceImplTest {
 		User user = User.builder()
 				.id(1L)
 				.email("admin@test.com")
-				.role(Role.ADMIN)
+				.role(Role.SUPER_ADMIN)
 				.school(null)
 				.build();
 
@@ -151,7 +151,7 @@ public class SchoolDashboardServiceImplTest {
 		User user = User.builder()
 				.id(1L)
 				.email("schooladmin@test.com")
-				.role(Role.ADMIN)
+				.role(Role.SUPER_ADMIN)
 				.school(school)
 				.build();
 
@@ -197,7 +197,7 @@ public class SchoolDashboardServiceImplTest {
 		User user = User.builder()
 				.id(1L)
 				.email("schooladmin@test.com")
-				.role(Role.ADMIN)
+				.role(Role.SUPER_ADMIN)
 				.school(school)
 				.build();
 
@@ -220,7 +220,7 @@ public class SchoolDashboardServiceImplTest {
 		User user = User.builder()
 				.id(1L)
 				.email("admin@test.com")
-				.role(Role.ADMIN)
+				.role(Role.SUPER_ADMIN)
 				.school(null)
 				.build();
 
@@ -245,7 +245,7 @@ public class SchoolDashboardServiceImplTest {
 		User user = User.builder()
 				.id(1L)
 				.email("schooladmin@test.com")
-				.role(Role.ADMIN)
+				.role(Role.SUPER_ADMIN)
 				.school(school)
 				.build();
 
@@ -267,7 +267,7 @@ public class SchoolDashboardServiceImplTest {
 		User user = User.builder()
 				.id(1L)
 				.email("admin@test.com")
-				.role(Role.ADMIN)
+				.role(Role.SUPER_ADMIN)
 				.school(null)
 				.build();
 
@@ -294,7 +294,7 @@ public class SchoolDashboardServiceImplTest {
 		User user = User.builder()
 				.id(1L)
 				.email("schooladmin@test.com")
-				.role(Role.ADMIN)
+				.role(Role.SUPER_ADMIN)
 				.school(school)
 				.build();
 
@@ -318,7 +318,7 @@ public class SchoolDashboardServiceImplTest {
 		User user = User.builder()
 				.id(1L)
 				.email("admin@test.com")
-				.role(Role.ADMIN)
+				.role(Role.SUPER_ADMIN)
 				.school(null)
 				.build();
 
@@ -346,7 +346,7 @@ public class SchoolDashboardServiceImplTest {
 		User user = User.builder()
 				.id(1L)
 				.email("schooladmin@test.com")
-				.role(Role.ADMIN)
+				.role(Role.SUPER_ADMIN)
 				.school(school)
 				.build();
 
@@ -377,7 +377,7 @@ public class SchoolDashboardServiceImplTest {
 		User user = User.builder()
 				.id(1L)
 				.email("schooladmin@test.com")
-				.role(Role.ADMIN)
+				.role(Role.SUPER_ADMIN)
 				.school(school)
 				.build();
 
@@ -403,7 +403,7 @@ public class SchoolDashboardServiceImplTest {
 		User user = User.builder()
 				.id(1L)
 				.email("admin@test.com")
-				.role(Role.ADMIN)
+				.role(Role.SUPER_ADMIN)
 				.school(null)
 				.build();
 

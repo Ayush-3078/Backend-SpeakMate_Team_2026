@@ -42,7 +42,7 @@ class SchoolDashboardControllerTest {
 	private SchoolDashboardService schoolDashboardService;
 
 	@Test
-	@WithMockUser(roles = "ADMIN")
+	@WithMockUser(roles = "SCHOOL_ADMIN")
 	@DisplayName("GET /api/v1/school/dashboard - returns dashboard data")
 	void getSchoolDashboard_ReturnsDashboard() throws Exception {
 		SchoolDashboardResponse response = SchoolDashboardResponse.builder()
@@ -98,7 +98,7 @@ class SchoolDashboardControllerTest {
 	}
 
 	@Test
-	@WithMockUser(roles = "ADMIN")
+	@WithMockUser(roles = "SCHOOL_ADMIN")
 	@DisplayName("GET /api/v1/school/dashboard/activity - returns activity data")
 	void getActivity_ReturnsActivity() throws Exception {
 		ActivityResponse response = ActivityResponse.builder()
@@ -121,7 +121,7 @@ class SchoolDashboardControllerTest {
 	}
 
 	@Test
-	@WithMockUser(roles = "ADMIN")
+	@WithMockUser(roles = "SCHOOL_ADMIN")
 	@DisplayName("GET /api/v1/school/dashboard/progress - returns progress data")
 	void getProgress_ReturnsProgress() throws Exception {
 		SchoolProgressResponse response = SchoolProgressResponse.builder()
@@ -144,7 +144,7 @@ class SchoolDashboardControllerTest {
 	}
 
 	@Test
-	@WithMockUser(roles = "ADMIN")
+	@WithMockUser(roles = "SCHOOL_ADMIN")
 	@DisplayName("GET /api/v1/school/dashboard/skill-scores - returns skill scores")
 	void getSkillScores_ReturnsScores() throws Exception {
 		SkillScoresResponse response = SkillScoresResponse.builder()
@@ -168,7 +168,7 @@ class SchoolDashboardControllerTest {
 	}
 
 	@Test
-	@WithMockUser(roles = "ADMIN")
+	@WithMockUser(roles = "SCHOOL_ADMIN")
 	@DisplayName("GET /api/v1/school/dashboard/leaderboard - returns leaderboard")
 	void getLeaderboard_ReturnsLeaderboard() throws Exception {
 		LeaderboardResponse response = LeaderboardResponse.builder()

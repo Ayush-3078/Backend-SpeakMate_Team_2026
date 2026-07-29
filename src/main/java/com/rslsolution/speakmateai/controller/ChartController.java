@@ -15,7 +15,7 @@ import com.rslsolution.speakmateai.dto.response.chart.WeeklyActiveUsersResponse;
 import com.rslsolution.speakmateai.service.ChartService;
 
 @RestController
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('SUPER_ADMIN')")
 public class ChartController {
 
 	private final ChartService chartService;

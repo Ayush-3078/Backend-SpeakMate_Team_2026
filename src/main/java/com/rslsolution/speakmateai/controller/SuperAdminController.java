@@ -14,7 +14,7 @@ import com.rslsolution.speakmateai.service.AdminService;
 
 @RestController
 @RequestMapping("/api/v1/admin")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('SUPER_ADMIN')")
 public class SuperAdminController {
 
 	private final AdminService adminService;

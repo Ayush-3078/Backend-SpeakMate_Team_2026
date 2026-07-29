@@ -14,7 +14,7 @@ import com.rslsolution.speakmateai.service.SchoolDashboardService;
 
 @RestController
 @RequestMapping("/api/v1/school/dashboard")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('SCHOOL_ADMIN')")
 public class SchoolDashboardController {
 
 	private final SchoolDashboardService schoolDashboardService;

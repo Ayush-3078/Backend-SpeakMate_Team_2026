@@ -3,6 +3,7 @@ package com.rslsolution.speakmateai.entity;
 import java.time.LocalDateTime;
 
 import com.rslsolution.speakmateai.enums.Role;
+import com.rslsolution.speakmateai.enums.Status;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -116,6 +117,16 @@ public class User {
 	private String userType;
 
 	private String interests;
+
+	@Column(name = "school_id", insertable = false, updatable = false)
+	private Long schoolId;
+
+	@Column(name = "student_id", unique = true)
+	private String studentId;
+
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private Status status = Status.ACTIVE;
 
 	@ManyToOne
 	@JoinColumn(name = "school_id")
@@ -236,6 +247,15 @@ public class User {
 	public String getInterests() { return interests; }
 	public void setInterests(String interests) { this.interests = interests; }
 
+	public Long getSchoolId() { return schoolId; }
+	public void setSchoolId(Long schoolId) { this.schoolId = schoolId; }
+
+	public String getStudentId() { return studentId; }
+	public void setStudentId(String studentId) { this.studentId = studentId; }
+
+	public Status getStatus() { return status; }
+	public void setStatus(Status status) { this.status = status; }
+
 	public School getSchool() { return school; }
 	public void setSchool(School school) { this.school = school; }
 
@@ -273,6 +293,10 @@ public class User {
 		private String ageGroup;
 		private String userType;
 		private String interests;
+		private Long schoolId;
+		private String studentId;
+		private Status status;
+		private School school;
 		private String expoPushToken;
 
 		public UserBuilder id(Long id) { this.id = id; return this; }
@@ -301,6 +325,9 @@ public class User {
 		public UserBuilder ageGroup(String ageGroup) { this.ageGroup = ageGroup; return this; }
 		public UserBuilder userType(String userType) { this.userType = userType; return this; }
 		public UserBuilder interests(String interests) { this.interests = interests; return this; }
+		public UserBuilder schoolId(Long schoolId) { this.schoolId = schoolId; return this; }
+		public UserBuilder studentId(String studentId) { this.studentId = studentId; return this; }
+		public UserBuilder status(Status status) { this.status = status; return this; }
 		public UserBuilder school(School school) { this.school = school; return this; }
 		public UserBuilder expoPushToken(String expoPushToken) { this.expoPushToken = expoPushToken; return this; }
 
@@ -332,6 +359,9 @@ public class User {
 			user.setAgeGroup(ageGroup);
 			user.setUserType(userType);
 			user.setInterests(interests);
+			user.setSchoolId(schoolId);
+			user.setStudentId(studentId);
+			user.setStatus(status);
 			user.setSchool(school);
 			user.setExpoPushToken(expoPushToken);
 			return user;

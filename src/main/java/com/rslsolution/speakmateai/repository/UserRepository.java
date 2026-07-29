@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.enums.Role;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -67,5 +68,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
 	long countBySchoolIdAndUserTypeAndActiveTrue(Long schoolId, String userType);
 
 	long countBySchoolIdAndUserTypeAndActiveFalse(Long schoolId, String userType);
+
+	List<User> findAllByRole(Role role);
+
+	List<User> findAllByRoleAndSchoolId(Role role, Long schoolId);
+
+	Optional<User> findByIdAndRole(Long id, Role role);
+
+	Optional<User> findByIdAndRoleAndSchoolId(Long id, Role role, Long schoolId);
+
+	boolean existsByStudentId(String studentId);
+
+	boolean existsByStudentIdAndSchoolId(String studentId, Long schoolId);
 
 }

@@ -1,6 +1,7 @@
 package com.rslsolution.speakmateai.dto.response;
 
 import com.rslsolution.speakmateai.enums.Role;
+import com.rslsolution.speakmateai.enums.Status;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,6 +21,9 @@ public class StudentResponse {
 	private Role role;
 	private Boolean active;
 	private String userType;
+	private Long schoolId;
+	private String studentId;
+	private Status status;
 
 	public Long getId() { return id; }
 	public void setId(Long id) { this.id = id; }
@@ -42,6 +46,15 @@ public class StudentResponse {
 	public String getUserType() { return userType; }
 	public void setUserType(String userType) { this.userType = userType; }
 
+	public Long getSchoolId() { return schoolId; }
+	public void setSchoolId(Long schoolId) { this.schoolId = schoolId; }
+
+	public String getStudentId() { return studentId; }
+	public void setStudentId(String studentId) { this.studentId = studentId; }
+
+	public Status getStatus() { return status; }
+	public void setStatus(Status status) { this.status = status; }
+
 	public static StudentResponseBuilder builder() {
 		return new StudentResponseBuilder();
 	}
@@ -62,6 +75,9 @@ public class StudentResponse {
 		public StudentResponseBuilder role(Role role) { this.role = role; return this; }
 		public StudentResponseBuilder active(Boolean active) { this.active = active; return this; }
 		public StudentResponseBuilder userType(String userType) { this.userType = userType; return this; }
+		public StudentResponseBuilder schoolId(Long schoolId) { this.schoolId = schoolId; return this; }
+		public StudentResponseBuilder studentId(String studentId) { this.studentId = studentId; return this; }
+		public StudentResponseBuilder status(Status status) { this.status = status; return this; }
 
 		public StudentResponse build() {
 			StudentResponse obj = new StudentResponse();
@@ -72,6 +88,9 @@ public class StudentResponse {
 			obj.setRole(role);
 			obj.setActive(active);
 			obj.setUserType(userType);
+			obj.setSchoolId(schoolId);
+			obj.setStudentId(studentId);
+			obj.setStatus(status);
 			return obj;
 		}
 	}

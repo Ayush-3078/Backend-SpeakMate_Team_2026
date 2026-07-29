@@ -10,7 +10,7 @@ import com.rslsolution.speakmateai.dto.response.*;
 import com.rslsolution.speakmateai.service.DashboardService;
 
 @RestController
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('SUPER_ADMIN')")
 public class DashboardController {
 
 	private final DashboardService dashboardService;
