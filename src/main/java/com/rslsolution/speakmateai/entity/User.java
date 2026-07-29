@@ -3,6 +3,7 @@ package com.rslsolution.speakmateai.entity;
 import java.time.LocalDateTime;
 
 import com.rslsolution.speakmateai.enums.Role;
+import com.rslsolution.speakmateai.enums.Status;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -12,6 +13,8 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -111,7 +114,23 @@ public class User {
 
 	private String ageGroup;
 
+	private String userType;
+
 	private String interests;
+
+	@Column(name = "school_id", insertable = false, updatable = false)
+	private Long schoolId;
+
+	@Column(name = "student_id", unique = true)
+	private String studentId;
+
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private Status status = Status.ACTIVE;
+
+	@ManyToOne
+	@JoinColumn(name = "school_id")
+	private School school;
 
 	@OneToMany(mappedBy = "user", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
 	private java.util.List<Progress> progressList;
@@ -219,8 +238,26 @@ public class User {
 	public String getPreferredAccent() { return preferredAccent; }
 	public void setPreferredAccent(String preferredAccent) { this.preferredAccent = preferredAccent; }
 
+	public String getAgeGroup() { return ageGroup; }
+	public void setAgeGroup(String ageGroup) { this.ageGroup = ageGroup; }
+
+	public String getUserType() { return userType; }
+	public void setUserType(String userType) { this.userType = userType; }
+
 	public String getInterests() { return interests; }
 	public void setInterests(String interests) { this.interests = interests; }
+
+	public Long getSchoolId() { return schoolId; }
+	public void setSchoolId(Long schoolId) { this.schoolId = schoolId; }
+
+	public String getStudentId() { return studentId; }
+	public void setStudentId(String studentId) { this.studentId = studentId; }
+
+	public Status getStatus() { return status; }
+	public void setStatus(Status status) { this.status = status; }
+
+	public School getSchool() { return school; }
+	public void setSchool(School school) { this.school = school; }
 
 	public String getExpoPushToken() { return expoPushToken; }
 	public void setExpoPushToken(String expoPushToken) { this.expoPushToken = expoPushToken; }
@@ -253,7 +290,13 @@ public class User {
 		private Integer dailyGoalMinutes;
 		private String preferredVoice;
 		private String preferredAccent;
+		private String ageGroup;
+		private String userType;
 		private String interests;
+		private Long schoolId;
+		private String studentId;
+		private Status status;
+		private School school;
 		private String expoPushToken;
 
 		public UserBuilder id(Long id) { this.id = id; return this; }
@@ -279,7 +322,13 @@ public class User {
 		public UserBuilder dailyGoalMinutes(Integer dailyGoalMinutes) { this.dailyGoalMinutes = dailyGoalMinutes; return this; }
 		public UserBuilder preferredVoice(String preferredVoice) { this.preferredVoice = preferredVoice; return this; }
 		public UserBuilder preferredAccent(String preferredAccent) { this.preferredAccent = preferredAccent; return this; }
+		public UserBuilder ageGroup(String ageGroup) { this.ageGroup = ageGroup; return this; }
+		public UserBuilder userType(String userType) { this.userType = userType; return this; }
 		public UserBuilder interests(String interests) { this.interests = interests; return this; }
+		public UserBuilder schoolId(Long schoolId) { this.schoolId = schoolId; return this; }
+		public UserBuilder studentId(String studentId) { this.studentId = studentId; return this; }
+		public UserBuilder status(Status status) { this.status = status; return this; }
+		public UserBuilder school(School school) { this.school = school; return this; }
 		public UserBuilder expoPushToken(String expoPushToken) { this.expoPushToken = expoPushToken; return this; }
 
 		public User build() {
@@ -307,7 +356,13 @@ public class User {
 			user.setDailyGoalMinutes(dailyGoalMinutes);
 			user.setPreferredVoice(preferredVoice);
 			user.setPreferredAccent(preferredAccent);
+			user.setAgeGroup(ageGroup);
+			user.setUserType(userType);
 			user.setInterests(interests);
+			user.setSchoolId(schoolId);
+			user.setStudentId(studentId);
+			user.setStatus(status);
+			user.setSchool(school);
 			user.setExpoPushToken(expoPushToken);
 			return user;
 		}

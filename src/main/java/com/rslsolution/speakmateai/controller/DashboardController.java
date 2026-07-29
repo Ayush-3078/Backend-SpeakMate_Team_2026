@@ -2,6 +2,7 @@ package com.rslsolution.speakmateai.controller;
 
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -9,6 +10,7 @@ import com.rslsolution.speakmateai.dto.response.*;
 import com.rslsolution.speakmateai.service.DashboardService;
 
 @RestController
+@PreAuthorize("hasRole('SUPER_ADMIN')")
 public class DashboardController {
 
 	private final DashboardService dashboardService;
@@ -17,9 +19,14 @@ public class DashboardController {
 		this.dashboardService = dashboardService;
 	}
 
-	@GetMapping({"/api/dashboard", "/api/dashboard/summary"})
+	@GetMapping("/api/dashboard")
 	public DashboardSummaryResponse getDashboardSummary() {
 		return dashboardService.getDashboardSummary();
+	}
+
+	@GetMapping("/api/dashboard/summary")
+	public DashboardOverviewResponse getDashboardOverview() {
+		return dashboardService.getDashboardOverview();
 	}
 
 	@GetMapping("/api/dashboard/daily-goal")

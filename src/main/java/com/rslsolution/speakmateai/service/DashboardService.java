@@ -18,4 +18,6 @@ public interface DashboardService {
 
 	List<RecentActivityResponse> getRecentActivity();
 
+	DashboardOverviewResponse getDashboardOverview();
+
 }
