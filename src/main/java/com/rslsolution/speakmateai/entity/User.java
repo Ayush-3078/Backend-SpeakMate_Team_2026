@@ -61,6 +61,13 @@ public class User {
 	@Column(columnDefinition = "TEXT")
 	private String avatar;
 
+	private Long schoolId;
+
+	private String studentId;
+
+	@Enumerated(EnumType.STRING)
+	private com.rslsolution.speakmateai.enums.Status status;
+
 	@Builder.Default
 	@Column(nullable = false)
 	private boolean active = true;
@@ -95,6 +102,10 @@ public class User {
 	private String resetOtp;
 
 	private LocalDateTime resetOtpExpiry;
+
+	private String emailVerificationToken;
+
+	private boolean emailVerified;
 
 	// Onboarding fields
 	private String nativeLanguage;
@@ -171,6 +182,15 @@ public class User {
 	public String getAvatar() { return avatar; }
 	public void setAvatar(String avatar) { this.avatar = avatar; }
 
+	public Long getSchoolId() { return schoolId; }
+	public void setSchoolId(Long schoolId) { this.schoolId = schoolId; }
+
+	public String getStudentId() { return studentId; }
+	public void setStudentId(String studentId) { this.studentId = studentId; }
+
+	public com.rslsolution.speakmateai.enums.Status getStatus() { return status; }
+	public void setStatus(com.rslsolution.speakmateai.enums.Status status) { this.status = status; }
+
 	public boolean isActive() { return active; }
 	public void setActive(boolean active) { this.active = active; }
 
@@ -200,6 +220,12 @@ public class User {
 
 	public LocalDateTime getResetOtpExpiry() { return resetOtpExpiry; }
 	public void setResetOtpExpiry(LocalDateTime resetOtpExpiry) { this.resetOtpExpiry = resetOtpExpiry; }
+
+	public String getEmailVerificationToken() { return emailVerificationToken; }
+	public void setEmailVerificationToken(String emailVerificationToken) { this.emailVerificationToken = emailVerificationToken; }
+
+	public boolean isEmailVerified() { return emailVerified; }
+	public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }
 
 	public String getNativeLanguage() { return nativeLanguage; }
 	public void setNativeLanguage(String nativeLanguage) { this.nativeLanguage = nativeLanguage; }
@@ -237,6 +263,9 @@ public class User {
 		private String password;
 		private Role role;
 		private String avatar;
+		private Long schoolId;
+		private String studentId;
+		private com.rslsolution.speakmateai.enums.Status status;
 		private boolean active = true;
 		private LocalDateTime createdAt;
 		private LocalDateTime updatedAt;
@@ -247,6 +276,8 @@ public class User {
 		private LocalDateTime resetPasswordTokenExpiry;
 		private String resetOtp;
 		private LocalDateTime resetOtpExpiry;
+		private String emailVerificationToken;
+		private boolean emailVerified;
 		private String nativeLanguage;
 		private String englishLevel;
 		private String learningGoal;
@@ -263,6 +294,9 @@ public class User {
 		public UserBuilder password(String password) { this.password = password; return this; }
 		public UserBuilder role(Role role) { this.role = role; return this; }
 		public UserBuilder avatar(String avatar) { this.avatar = avatar; return this; }
+		public UserBuilder schoolId(Long schoolId) { this.schoolId = schoolId; return this; }
+		public UserBuilder studentId(String studentId) { this.studentId = studentId; return this; }
+		public UserBuilder status(com.rslsolution.speakmateai.enums.Status status) { this.status = status; return this; }
 		public UserBuilder active(boolean active) { this.active = active; return this; }
 		public UserBuilder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
 		public UserBuilder updatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; return this; }
@@ -273,6 +307,8 @@ public class User {
 		public UserBuilder resetPasswordTokenExpiry(LocalDateTime resetPasswordTokenExpiry) { this.resetPasswordTokenExpiry = resetPasswordTokenExpiry; return this; }
 		public UserBuilder resetOtp(String resetOtp) { this.resetOtp = resetOtp; return this; }
 		public UserBuilder resetOtpExpiry(LocalDateTime resetOtpExpiry) { this.resetOtpExpiry = resetOtpExpiry; return this; }
+		public UserBuilder emailVerificationToken(String emailVerificationToken) { this.emailVerificationToken = emailVerificationToken; return this; }
+		public UserBuilder emailVerified(boolean emailVerified) { this.emailVerified = emailVerified; return this; }
 		public UserBuilder nativeLanguage(String nativeLanguage) { this.nativeLanguage = nativeLanguage; return this; }
 		public UserBuilder englishLevel(String englishLevel) { this.englishLevel = englishLevel; return this; }
 		public UserBuilder learningGoal(String learningGoal) { this.learningGoal = learningGoal; return this; }
@@ -291,6 +327,9 @@ public class User {
 			user.setPassword(password);
 			user.setRole(role);
 			user.setAvatar(avatar);
+			user.setSchoolId(schoolId);
+			user.setStudentId(studentId);
+			user.setStatus(status);
 			user.setActive(active);
 			user.setCreatedAt(createdAt);
 			user.setUpdatedAt(updatedAt);
@@ -301,6 +340,8 @@ public class User {
 			user.setResetPasswordTokenExpiry(resetPasswordTokenExpiry);
 			user.setResetOtp(resetOtp);
 			user.setResetOtpExpiry(resetOtpExpiry);
+			user.setEmailVerificationToken(emailVerificationToken);
+			user.setEmailVerified(emailVerified);
 			user.setNativeLanguage(nativeLanguage);
 			user.setEnglishLevel(englishLevel);
 			user.setLearningGoal(learningGoal);

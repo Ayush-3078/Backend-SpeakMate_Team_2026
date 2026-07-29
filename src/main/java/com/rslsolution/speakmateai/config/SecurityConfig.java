@@ -43,10 +43,11 @@ public class SecurityConfig {
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
 						// Admin Auth
-						.requestMatchers("/api/admin/auth/login", "/api/admin/auth/forgot-password", "/api/admin/auth/verify-otp", "/api/admin/auth/reset-password", "/api/admin/auth/refresh-token").permitAll()
-						.requestMatchers("/api/admin/auth/**").authenticated()
+						.requestMatchers("/api/v1/auth/admin/login", "/api/v1/auth/admin/forgot-password", "/api/v1/auth/admin/verify-otp", "/api/v1/auth/admin/reset-password", "/api/v1/auth/admin/refresh-token").permitAll()
+						.requestMatchers("/api/v1/auth/admin/**").authenticated()
 						// Auth endpoints
 						.requestMatchers(
+								"/api/v1/auth/login",
 								"/api/users/register", "/api/users/login",
 								"/api/users/google-login", "/api/users/send-registration-otp",
 								"/api/users/send-delete-account-otp", "/api/users/delete-account",
