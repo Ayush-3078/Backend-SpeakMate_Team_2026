@@ -43,8 +43,8 @@ public class SecurityConfig {
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
 						// Admin Auth
-						.requestMatchers("/api/admin/auth/login", "/api/admin/auth/forgot-password", "/api/admin/auth/verify-otp", "/api/admin/auth/reset-password", "/api/admin/auth/refresh-token").permitAll()
-						.requestMatchers("/api/admin/auth/**").authenticated()
+						.requestMatchers("/api/admin/auth/register", "/api/admin/auth/login", "/api/admin/auth/forgot-password", "/api/admin/auth/verify-otp", "/api/admin/auth/reset-password", "/api/admin/auth/refresh-token").permitAll()
+						.requestMatchers("/api/admin/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_ADMIN")
 						// Auth endpoints
 						.requestMatchers(
 								"/api/users/register", "/api/users/login",

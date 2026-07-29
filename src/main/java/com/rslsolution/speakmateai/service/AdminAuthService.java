@@ -12,6 +12,14 @@ import com.rslsolution.speakmateai.dto.response.VerifyOtpResponse;
 public interface AdminAuthService {
 
 	/**
+	 * Registers a new admin.
+	 *
+	 * @param request the registration request details
+	 * @return the admin response
+	 */
+	void register(com.rslsolution.speakmateai.dto.request.AdminRegisterRequest request);
+
+	/**
 	 * Authenticates an admin and updates the last login timestamp.
 	 *
 	 * @param request the login request details

@@ -48,6 +48,24 @@ public class AdminAuthServiceImpl implements AdminAuthService {
 	}
 
 	@Override
+	public void register(com.rslsolution.speakmateai.dto.request.AdminRegisterRequest request) {
+		if (adminRepository.findByEmail(request.getEmail()).isPresent()) {
+			throw new IllegalArgumentException("Admin with this email already exists");
+		}
+
+		Admin admin = Admin.builder()
+				.fullName(request.getFullName())
+				.email(request.getEmail())
+				.password(passwordEncoder.encode(request.getPassword()))
+				.phone(request.getPhone())
+				.role(Role.ADMIN)
+				.status(AdminStatus.ACTIVE)
+				.build();
+
+		adminRepository.save(admin);
+	}
+
+	@Override
 	public AdminLoginResponse login(AdminLoginRequest request) {
 		Admin admin = adminRepository.findByEmail(request.getEmail())
 				.orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));

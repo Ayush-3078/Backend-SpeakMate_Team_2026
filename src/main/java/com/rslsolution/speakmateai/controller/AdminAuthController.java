@@ -32,6 +32,12 @@ public class AdminAuthController {
 		this.adminAuthService = adminAuthService;
 	}
 
+	@PostMapping("/register")
+	public ResponseEntity<ApiResponse<String>> register(@Valid @RequestBody com.rslsolution.speakmateai.dto.request.AdminRegisterRequest request) {
+		adminAuthService.register(request);
+		return ResponseEntity.ok(ApiResponse.success("Admin registered successfully"));
+	}
+
 	@PostMapping("/login")
 	public ResponseEntity<ApiResponse<AdminLoginResponse>> login(@Valid @RequestBody AdminLoginRequest request) {
 		AdminLoginResponse loginResponse = adminAuthService.login(request);
