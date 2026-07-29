@@ -18,7 +18,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.rslsolution.speakmateai.security.AdminJwtAuthenticationFilter;
 import com.rslsolution.speakmateai.security.JwtAuthenticationFilter;
 import com.rslsolution.speakmateai.security.RequestLoggingFilter;
 
@@ -30,12 +29,10 @@ public class SecurityConfig {
 
 	private final JwtAuthenticationFilter jwtAuthenticationFilter;
 	private final RequestLoggingFilter requestLoggingFilter;
-	private final AdminJwtAuthenticationFilter adminJwtAuthenticationFilter;
 
-	public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, RequestLoggingFilter requestLoggingFilter, AdminJwtAuthenticationFilter adminJwtAuthenticationFilter) {
+	public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, RequestLoggingFilter requestLoggingFilter) {
 		this.jwtAuthenticationFilter = jwtAuthenticationFilter;
 		this.requestLoggingFilter = requestLoggingFilter;
-		this.adminJwtAuthenticationFilter = adminJwtAuthenticationFilter;
 	}
 
 	@Bean
@@ -44,9 +41,6 @@ public class SecurityConfig {
 				.cors(Customizer.withDefaults())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
-						// Admin Auth
-						.requestMatchers("/api/admin/auth/login", "/api/admin/auth/forgot-password", "/api/admin/auth/verify-otp", "/api/admin/auth/reset-password", "/api/admin/auth/refresh-token").permitAll()
-						.requestMatchers("/api/admin/auth/**").authenticated()
 						// Auth endpoints
 						.requestMatchers(
 								"/api/users/register", "/api/users/login",
@@ -68,7 +62,6 @@ public class SecurityConfig {
 				.httpBasic(Customizer.withDefaults());
 
 		http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-		http.addFilterBefore(adminJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 		http.addFilterBefore(requestLoggingFilter, JwtAuthenticationFilter.class);
 
 		return http.build();
