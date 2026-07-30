@@ -45,6 +45,18 @@ public class GlobalExceptionHandler {
 		return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
 	}
 
+	@ExceptionHandler(ResourceNotFoundException.class)
+	public ResponseEntity<Map<String, Object>> handleResourceNotFound(ResourceNotFoundException ex) {
+		logException("handleResourceNotFound", ex);
+
+		Map<String, Object> response = new HashMap<>();
+		response.put("timestamp", LocalDateTime.now());
+		response.put("status", HttpStatus.NOT_FOUND.value());
+		response.put("message", ex.getMessage());
+
+		return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+	}
+
 	@ExceptionHandler(ChatNotFoundException.class)
 	public ResponseEntity<Map<String, Object>> handleChatNotFound(ChatNotFoundException ex) {
 

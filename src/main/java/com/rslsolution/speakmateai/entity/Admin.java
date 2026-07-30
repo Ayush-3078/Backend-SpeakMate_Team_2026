@@ -62,6 +62,36 @@ public class Admin {
 
 	private LocalDateTime lastLogin;
 
+	// --- Profile Fields ---
+	private String department;
+	private String designation;
+	private String location;
+
+	// --- Settings Fields ---
+	@Builder.Default
+	private String theme = "LIGHT";
+
+	@Builder.Default
+	private String language = "en";
+
+	@Builder.Default
+	private Boolean sidebarCollapsed = false;
+
+	@Builder.Default
+	private Boolean notificationsEnabled = true;
+
+	@Builder.Default
+	private Boolean emailNotifications = true;
+
+	@Builder.Default
+	private Boolean systemNotifications = true;
+
+	@Builder.Default
+	private Boolean twoFactorEnabled = false;
+
+	@Builder.Default
+	private int sessionTimeout = 30;
+
 	@Column(nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 

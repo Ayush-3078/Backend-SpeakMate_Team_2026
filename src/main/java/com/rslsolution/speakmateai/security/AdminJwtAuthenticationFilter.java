@@ -35,8 +35,8 @@ public class AdminJwtAuthenticationFilter extends OncePerRequestFilter {
 	@Override
 	protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
 		String path = request.getServletPath();
-		// This filter ONLY runs for /api/admin/auth/ endpoints. So it should not filter (i.e. return true) for everything else.
-		return !path.startsWith("/api/admin/auth/");
+		// This filter ONLY runs for /api/admin/ endpoints. So it should not filter (i.e. return true) for everything else.
+		return !path.startsWith("/api/admin/");
 	}
 
 	@Override

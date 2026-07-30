@@ -30,7 +30,8 @@ public class SecurityConfig {
 	private final RequestLoggingFilter requestLoggingFilter;
 	private final AdminJwtAuthenticationFilter adminJwtAuthenticationFilter;
 
-	public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, RequestLoggingFilter requestLoggingFilter, AdminJwtAuthenticationFilter adminJwtAuthenticationFilter) {
+	public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, RequestLoggingFilter requestLoggingFilter,
+			AdminJwtAuthenticationFilter adminJwtAuthenticationFilter) {
 		this.jwtAuthenticationFilter = jwtAuthenticationFilter;
 		this.requestLoggingFilter = requestLoggingFilter;
 		this.adminJwtAuthenticationFilter = adminJwtAuthenticationFilter;
@@ -43,8 +44,11 @@ public class SecurityConfig {
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
 						// Admin Auth
-						.requestMatchers("/api/v1/auth/admin/login", "/api/v1/auth/admin/forgot-password", "/api/v1/auth/admin/verify-otp", "/api/v1/auth/admin/reset-password", "/api/v1/auth/admin/refresh-token").permitAll()
-						.requestMatchers("/api/v1/auth/admin/**").authenticated()
+						.requestMatchers("/api/admin/auth/register", "/api/v1/auth/admin/login",
+								"/api/v1/auth/admin/forgot-password", "/api/v1/auth/admin/verify-otp",
+								"/api/v1/auth/admin/reset-password", "/api/v1/auth/admin/refresh-token")
+						.permitAll()
+						.requestMatchers("/api/v1/admin/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_ADMIN")
 						// Auth endpoints
 						.requestMatchers(
 								"/api/v1/auth/login",

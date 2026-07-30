@@ -28,27 +28,23 @@ public class AdminController {
 		return adminService.getDashboard();
 	}
 
-	@GetMapping("/users")
-	public List<UserResponse> getAllUsers() {
+	// @GetMapping("/users")
+	// public List<UserResponse> getAllUsers() {
+	// 	return adminService.getAllUsers();
+	// }
 
-		return adminService.getAllUsers();
-	}
+	// @GetMapping("/users/{id}")
+	// public UserResponse getUserById(@PathVariable Long id) {
+	// 	return adminService.getUserById(id);
+	// }
 
-	@GetMapping("/users/{id}")
-	public UserResponse getUserById(@PathVariable Long id) {
+	// @PutMapping("/users/activate/{id}")
+	// public UserResponse activateUser(@PathVariable Long id) {
+	// 	return adminService.activateUser(id);
+	// }
 
-		return adminService.getUserById(id);
-	}
-
-	@PutMapping("/users/activate/{id}")
-	public UserResponse activateUser(@PathVariable Long id) {
-
-		return adminService.activateUser(id);
-	}
-
-	@PutMapping("/users/deactivate/{id}")
-	public UserResponse deactivateUser(@PathVariable Long id) {
-
-		return adminService.deactivateUser(id);
-	}
+	// @PutMapping("/users/deactivate/{id}")
+	// public UserResponse deactivateUser(@PathVariable Long id) {
+	// 	return adminService.deactivateUser(id);
+	// }
 }
