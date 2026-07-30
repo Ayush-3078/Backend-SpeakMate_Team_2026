@@ -1,339 +1,308 @@
 package com.rslsolution.speakmateai.service.impl;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.rslsolution.speakmateai.dto.request.StudentRequest;
 import com.rslsolution.speakmateai.dto.response.StudentImportResponse;
 import com.rslsolution.speakmateai.dto.response.StudentResponse;
+import com.rslsolution.speakmateai.entity.Admin;
 import com.rslsolution.speakmateai.entity.User;
 import com.rslsolution.speakmateai.enums.Role;
 import com.rslsolution.speakmateai.enums.Status;
-import com.rslsolution.speakmateai.exception.UserNotFoundException;
+import com.rslsolution.speakmateai.repository.AdminRepository;
 import com.rslsolution.speakmateai.repository.UserRepository;
 import com.rslsolution.speakmateai.service.StudentService;
-import com.rslsolution.speakmateai.util.JwtUtil;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
-@Transactional
+@RequiredArgsConstructor
 public class StudentServiceImpl implements StudentService {
 
-	private static final Logger logger = LoggerFactory.getLogger(StudentServiceImpl.class);
+    private final UserRepository userRepository;
+    private final AdminRepository adminRepository;
+    private final PasswordEncoder passwordEncoder;
 
-	private final UserRepository userRepository;
-	private final JwtUtil jwtUtil;
+    private User getCurrentUser() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        
+        // 1. Try to find the user in the Tenant table
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user != null) {
+            return user;
+        }
 
-	public StudentServiceImpl(UserRepository userRepository, JwtUtil jwtUtil) {
-		this.userRepository = userRepository;
-		this.jwtUtil = jwtUtil;
-	}
+        // 2. If not found, check the Platform Admins table
+        Admin admin = adminRepository.findByEmail(email).orElse(null);
+        if (admin != null && admin.getRole() == Role.SUPER_ADMIN) {
+            // Create a proxy User object to satisfy the module's role checks
+            User proxyAdmin = new User();
+            proxyAdmin.setEmail(admin.getEmail());
+            proxyAdmin.setRole(admin.getRole());
+            return proxyAdmin;
+        }
 
-	private User getCurrentUser() {
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getName())) {
-			throw new UserNotFoundException("User not authenticated");
-		}
-		return userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
-	}
+        throw new RuntimeException("Current user not found");
+    }
 
-	private boolean isSuperAdmin() {
-		return getCurrentUser().getRole() == Role.SUPER_ADMIN;
-	}
+    @Override
+    public List<StudentResponse> getAllStudents() {
+        User currentUser = getCurrentUser();
+        List<User> students;
 
-	@Override
-	public List<StudentResponse> getAllStudents() {
-		logger.debug("[StudentService] Fetching all students");
-		User currentUser = getCurrentUser();
-		List<User> students;
+        if (currentUser.getRole() == Role.SUPER_ADMIN) {
+            students = userRepository.findAllStudents();
+        } else if (currentUser.getRole() == Role.SCHOOL_ADMIN) {
+            students = userRepository.findAllStudentsBySchoolId(currentUser.getSchoolId());
+        } else {
+            throw new RuntimeException("Unauthorized to access students");
+        }
 
-		if (isSuperAdmin()) {
-			students = userRepository.findAllByRole(Role.STUDENT);
-		} else {
-			Long schoolId = currentUser.getSchoolId();
-			students = userRepository.findAllByRoleAndSchoolId(Role.STUDENT, schoolId);
-		}
+        return students.stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
 
-		return students.stream()
-				.map(this::mapToStudentResponse)
-				.collect(Collectors.toList());
-	}
+    @Override
+    public StudentResponse getStudentById(Long id) {
+        User currentUser = getCurrentUser();
+        User student;
 
-	@Override
-	public StudentResponse getStudentById(Long id) {
-		logger.debug("[StudentService] Fetching student by id: {}", id);
-		User currentUser = getCurrentUser();
-		User student;
+        if (currentUser.getRole() == Role.SUPER_ADMIN) {
+            student = userRepository.findStudentById(id)
+                    .orElseThrow(() -> new RuntimeException("Student not found"));
+        } else if (currentUser.getRole() == Role.SCHOOL_ADMIN) {
+            student = userRepository.findStudentByIdAndSchoolId(id, currentUser.getSchoolId())
+                    .orElseThrow(() -> new RuntimeException("Student not found or not in your school"));
+        } else {
+            throw new RuntimeException("Unauthorized to access students");
+        }
 
-		if (isSuperAdmin()) {
-			student = userRepository.findByIdAndRole(id, Role.STUDENT)
-					.orElseThrow(() -> new UserNotFoundException("Student not found with id: " + id));
-		} else {
-			Long schoolId = currentUser.getSchoolId();
-			student = userRepository.findByIdAndRoleAndSchoolId(id, Role.STUDENT, schoolId)
-					.orElseThrow(() -> new UserNotFoundException("Student not found with id: " + id));
-		}
+        return mapToResponse(student);
+    }
 
-		return mapToStudentResponse(student);
-	}
+    @Override
+    public StudentResponse createStudent(StudentRequest request) {
+        User currentUser = getCurrentUser();
+        
+        Long schoolIdToUse;
+        if (currentUser.getRole() == Role.SUPER_ADMIN) {
+            if (request.getSchoolId() == null) {
+                throw new RuntimeException("Super Admin must provide a schoolId to assign the student to.");
+            }
+            schoolIdToUse = request.getSchoolId();
+        } else if (currentUser.getRole() == Role.SCHOOL_ADMIN) {
+            schoolIdToUse = currentUser.getSchoolId(); // Force school ID of current user
+        } else {
+            throw new RuntimeException("Unauthorized to create students");
+        }
 
-	@Override
-	public StudentResponse createStudent(StudentRequest request) {
-		logger.debug("[StudentService] Creating student: {}", request.getEmail());
-		User currentUser = getCurrentUser();
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Email already exists");
+        }
 
-		Long schoolId;
-		if (isSuperAdmin()) {
-			schoolId = request.getSchoolId();
-			if (schoolId == null) {
-				throw new IllegalArgumentException("schoolId is required for SUPER_ADMIN");
-			}
-		} else {
-			schoolId = currentUser.getSchoolId();
-		}
+        // Auto-generate Student ID (e.g. STU-2026-1234)
+        java.util.Random random = new java.util.Random();
+        String generatedStudentId = String.format("STU-2026-%04d", random.nextInt(10000));
 
-		if (userRepository.existsByStudentId(request.getStudentId())) {
-			throw new IllegalArgumentException("Student ID already exists: " + request.getStudentId());
-		}
+        User student = User.builder()
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode("defaultPassword123!")) // Set a default password
+                .role(Role.STUDENT)
+                .schoolId(schoolIdToUse)
+                .studentId(generatedStudentId)
+                .status(Status.ACTIVE)
+                .active(true)
+                .build();
 
-		User student = User.builder()
-				.firstName(request.getFirstName())
-				.lastName(request.getLastName())
-				.email(request.getEmail())
-				.password(request.getPassword())
-				.role(Role.STUDENT)
-				.schoolId(schoolId)
-				.studentId(request.getStudentId())
-				.status(request.getStatus() != null ? request.getStatus() : Status.ACTIVE)
-				.active(true)
-				.userType("Student")
-				.build();
+        User savedStudent = userRepository.save(student);
+        return mapToResponse(savedStudent);
+    }
 
-		User saved = userRepository.save(student);
-		return mapToStudentResponse(saved);
-	}
+    @Override
+    public StudentResponse updateStudent(Long id, StudentRequest request) {
+        User currentUser = getCurrentUser();
+        User student;
 
-	@Override
-	public StudentResponse updateStudent(Long id, StudentRequest request) {
-		logger.debug("[StudentService] Updating student: {}", id);
-		User currentUser = getCurrentUser();
-		User student;
+        if (currentUser.getRole() == Role.SUPER_ADMIN) {
+            student = userRepository.findStudentById(id)
+                    .orElseThrow(() -> new RuntimeException("Student not found"));
+            
+            // Allow Super Admin to change schoolId if provided in request
+            if (request.getSchoolId() != null) {
+                student.setSchoolId(request.getSchoolId());
+            }
+            
 
-		if (isSuperAdmin()) {
-			student = userRepository.findByIdAndRole(id, Role.STUDENT)
-					.orElseThrow(() -> new UserNotFoundException("Student not found with id: " + id));
-		} else {
-			Long schoolId = currentUser.getSchoolId();
-			student = userRepository.findByIdAndRoleAndSchoolId(id, Role.STUDENT, schoolId)
-					.orElseThrow(() -> new UserNotFoundException("Student not found with id: " + id));
-		}
+        } else if (currentUser.getRole() == Role.SCHOOL_ADMIN) {
+            student = userRepository.findStudentByIdAndSchoolId(id, currentUser.getSchoolId())
+                    .orElseThrow(() -> new RuntimeException("Student not found or not in your school"));
+            
+            // Ignore schoolId in request, keeping the student in the current school
+            
+        } else {
+            throw new RuntimeException("Unauthorized to update students");
+        }
 
-		if (request.getFirstName() != null) {
-			student.setFirstName(request.getFirstName());
-		}
-		if (request.getLastName() != null) {
-			student.setLastName(request.getLastName());
-		}
-		if (request.getEmail() != null) {
-			student.setEmail(request.getEmail());
-		}
-		if (request.getStudentId() != null) {
-			student.setStudentId(request.getStudentId());
-		}
-		if (request.getStatus() != null) {
-			student.setStatus(request.getStatus());
-		}
+        if (!student.getEmail().equals(request.getEmail())) {
+            if (userRepository.existsByEmail(request.getEmail())) {
+                throw new RuntimeException("Email already exists");
+            }
+        }
 
-		User updated = userRepository.save(student);
-		return mapToStudentResponse(updated);
-	}
+        student.setFirstName(request.getFirstName());
+        student.setLastName(request.getLastName());
+        student.setEmail(request.getEmail());
 
-	@Override
-	public void deleteStudent(Long id) {
-		logger.debug("[StudentService] Deleting student: {}", id);
-		User currentUser = getCurrentUser();
-		User student;
+        User updatedStudent = userRepository.save(student);
+        return mapToResponse(updatedStudent);
+    }
 
-		if (isSuperAdmin()) {
-			student = userRepository.findByIdAndRole(id, Role.STUDENT)
-					.orElseThrow(() -> new UserNotFoundException("Student not found with id: " + id));
-		} else {
-			Long schoolId = currentUser.getSchoolId();
-			student = userRepository.findByIdAndRoleAndSchoolId(id, Role.STUDENT, schoolId)
-					.orElseThrow(() -> new UserNotFoundException("Student not found with id: " + id));
-		}
+    @Override
+    public void deleteStudent(Long id) {
+        User currentUser = getCurrentUser();
+        User student;
 
-		userRepository.delete(student);
-	}
+        if (currentUser.getRole() == Role.SUPER_ADMIN) {
+            student = userRepository.findStudentById(id)
+                    .orElseThrow(() -> new RuntimeException("Student not found"));
+        } else if (currentUser.getRole() == Role.SCHOOL_ADMIN) {
+            student = userRepository.findStudentByIdAndSchoolId(id, currentUser.getSchoolId())
+                    .orElseThrow(() -> new RuntimeException("Student not found or not in your school"));
+        } else {
+            throw new RuntimeException("Unauthorized to delete students");
+        }
 
-	@Override
-	public StudentImportResponse importStudents(List<StudentRequest> students) {
-		logger.debug("[StudentService] Importing {} students", students.size());
-		User currentUser = getCurrentUser();
-		List<String> errors = new ArrayList<>();
-		int successCount = 0;
+        userRepository.delete(student);
+    }
 
-		for (StudentRequest request : students) {
-			try {
-				Long schoolId;
-				if (isSuperAdmin()) {
-					schoolId = request.getSchoolId();
-					if (schoolId == null) {
-						errors.add("Student " + request.getEmail() + ": schoolId is required for SUPER_ADMIN");
-						continue;
-					}
-				} else {
-					schoolId = currentUser.getSchoolId();
-				}
+    @Override
+    public StudentImportResponse importStudents(MultipartFile file) {
+        User currentUser = getCurrentUser();
+        Long schoolIdToUse;
 
-				if (userRepository.existsByStudentId(request.getStudentId())) {
-					errors.add("Student " + request.getEmail() + ": Student ID already exists");
-					continue;
-				}
+        if (currentUser.getRole() == Role.SUPER_ADMIN) {
+            throw new RuntimeException("Super Admin cannot perform bulk import without school context. Not fully implemented yet.");
+        } else if (currentUser.getRole() == Role.SCHOOL_ADMIN) {
+            schoolIdToUse = currentUser.getSchoolId();
+        } else {
+            throw new RuntimeException("Unauthorized to import students");
+        }
 
-				User student = User.builder()
-						.firstName(request.getFirstName())
-						.lastName(request.getLastName())
-						.email(request.getEmail())
-						.password(request.getPassword())
-						.role(Role.STUDENT)
-						.schoolId(schoolId)
-						.studentId(request.getStudentId())
-						.status(request.getStatus() != null ? request.getStatus() : Status.ACTIVE)
-						.active(true)
-						.userType("Student")
-						.build();
+        List<String> errors = new ArrayList<>();
+        int successCount = 0;
+        int failedCount = 0;
+        int totalCount = 0;
 
-				userRepository.save(student);
-				successCount++;
-			} catch (Exception ex) {
-				errors.add("Student " + request.getEmail() + ": " + ex.getMessage());
-			}
-		}
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
+            String line;
+            boolean firstLine = true;
+            while ((line = br.readLine()) != null) {
+                if (firstLine) {
+                    firstLine = false;
+                    continue; // Skip header
+                }
+                totalCount++;
+                String[] data = line.split(",");
+                if (data.length < 3) {
+                    errors.add("Row " + totalCount + ": Invalid data format");
+                    failedCount++;
+                    continue;
+                }
+                
+                String firstName = data[0].trim();
+                String lastName = data[1].trim();
+                String email = data[2].trim();
 
-		return StudentImportResponse.builder()
-				.totalProcessed(students.size())
-				.successCount(successCount)
-				.failureCount(errors.size())
-				.errors(errors)
-				.build();
-	}
+                try {
+                    StudentRequest req = StudentRequest.builder()
+                            .firstName(firstName)
+                            .lastName(lastName)
+                            .email(email)
+                            .schoolId(schoolIdToUse)
+                            .build();
+                    createStudent(req);
+                    successCount++;
+                } catch (Exception e) {
+                    errors.add("Row " + totalCount + ": " + e.getMessage());
+                    failedCount++;
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse CSV file: " + e.getMessage());
+        }
 
-	@Override
-	public byte[] exportStudents(String format) {
-		logger.debug("[StudentService] Exporting students in format: {}", format);
-		List<StudentResponse> students = getAllStudents();
+        return StudentImportResponse.builder()
+                .totalRecords(totalCount)
+                .successfulImports(successCount)
+                .failedImports(failedCount)
+                .errors(errors)
+                .build();
+    }
 
-		if ("csv".equalsIgnoreCase(format)) {
-			return exportToCsv(students);
-		} else if ("excel".equalsIgnoreCase(format)) {
-			return exportToExcel(students);
-		} else {
-			throw new IllegalArgumentException("Unsupported format: " + format);
-		}
-	}
+    @Override
+    public byte[] exportStudents(String format) {
+        List<StudentResponse> students = getAllStudents();
+        
+        if ("csv".equalsIgnoreCase(format)) {
+            StringBuilder csvBuilder = new StringBuilder();
+            csvBuilder.append("ID,FirstName,LastName,Email,StudentId,SchoolId,Status,CreatedAt\n");
+            for (StudentResponse student : students) {
+                csvBuilder.append(student.getId()).append(",")
+                        .append(student.getFirstName()).append(",")
+                        .append(student.getLastName()).append(",")
+                        .append(student.getEmail()).append(",")
+                        .append(student.getStudentId()).append(",")
+                        .append(student.getSchoolId()).append(",")
+                        .append(student.getStatus()).append(",")
+                        .append(student.getCreatedAt()).append("\n");
+            }
+            return csvBuilder.toString().getBytes();
+        } else if ("excel".equalsIgnoreCase(format)) {
+            // Placeholder for Excel export
+            throw new RuntimeException("Excel export is supported conceptually but requires Apache POI implementation.");
+        } else {
+            throw new RuntimeException("Unsupported export format: " + format);
+        }
+    }
 
-	@Override
-	public Map<String, String> resetStudentPassword(Long id) {
-		logger.debug("[StudentService] Resetting password for student: {}", id);
-		User currentUser = getCurrentUser();
-		User student;
+    @Override
+    public void resetPassword(Long id, String newPassword) {
+        User currentUser = getCurrentUser();
+        User student;
 
-		if (isSuperAdmin()) {
-			student = userRepository.findByIdAndRole(id, Role.STUDENT)
-					.orElseThrow(() -> new UserNotFoundException("Student not found with id: " + id));
-		} else {
-			Long schoolId = currentUser.getSchoolId();
-			student = userRepository.findByIdAndRoleAndSchoolId(id, Role.STUDENT, schoolId)
-					.orElseThrow(() -> new UserNotFoundException("Student not found with id: " + id));
-		}
+        if (currentUser.getRole() == Role.SUPER_ADMIN) {
+            student = userRepository.findStudentById(id)
+                    .orElseThrow(() -> new RuntimeException("Student not found"));
+        } else if (currentUser.getRole() == Role.SCHOOL_ADMIN) {
+            student = userRepository.findStudentByIdAndSchoolId(id, currentUser.getSchoolId())
+                    .orElseThrow(() -> new RuntimeException("Student not found or not in your school"));
+        } else {
+            throw new RuntimeException("Unauthorized to reset student passwords");
+        }
 
-		String tempPassword = "Temp" + (int) (Math.random() * 1000000);
-		student.setPassword(tempPassword);
-		userRepository.save(student);
+        student.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(student);
+    }
 
-		return Map.of(
-				"studentId", String.valueOf(student.getId()),
-				"email", student.getEmail(),
-				"temporaryPassword", tempPassword
-		);
-	}
-
-	private StudentResponse mapToStudentResponse(User user) {
-		return StudentResponse.builder()
-				.id(user.getId())
-				.firstName(user.getFirstName())
-				.lastName(user.getLastName())
-				.email(user.getEmail())
-				.role(user.getRole())
-				.active(user.isActive())
-				.userType(user.getUserType())
-				.schoolId(user.getSchoolId())
-				.studentId(user.getStudentId())
-				.status(user.getStatus())
-				.build();
-	}
-
-	private byte[] exportToCsv(List<StudentResponse> students) {
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		PrintWriter writer = new PrintWriter(out, true, StandardCharsets.UTF_8);
-		writer.println("ID,First Name,Last Name,Email,Student ID,School ID,Status,Active,User Type");
-
-		for (StudentResponse s : students) {
-			writer.printf("%d,%s,%s,%s,%s,%s,%s,%b,%s%n",
-					s.getId(),
-					escapeCsv(s.getFirstName()),
-					escapeCsv(s.getLastName()),
-					escapeCsv(s.getEmail()),
-					escapeCsv(s.getStudentId()),
-					s.getSchoolId() != null ? s.getSchoolId() : "",
-					s.getStatus() != null ? s.getStatus() : "",
-					s.getActive() != null ? s.getActive() : false,
-					escapeCsv(s.getUserType()));
-		}
-
-		writer.flush();
-		return out.toByteArray();
-	}
-
-	private byte[] exportToExcel(List<StudentResponse> students) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("ID\tFirst Name\tLast Name\tEmail\tStudent ID\tSchool ID\tStatus\tActive\tUser Type\r\n");
-
-		for (StudentResponse s : students) {
-			sb.append(String.format("%d\t%s\t%s\t%s\t%s\t%s\t%s\t%b\t%s\r\n",
-					s.getId(),
-					s.getFirstName(),
-					s.getLastName(),
-					s.getEmail(),
-					s.getStudentId(),
-					s.getSchoolId() != null ? s.getSchoolId() : "",
-					s.getStatus() != null ? s.getStatus() : "",
-					s.getActive() != null ? s.getActive() : false,
-					s.getUserType()));
-		}
-
-		return sb.toString().getBytes(StandardCharsets.UTF_8);
-	}
-
-	private String escapeCsv(String value) {
-		if (value == null) return "";
-		if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
-			return "\"" + value.replace("\"", "\"\"") + "\"";
-		}
-		return value;
-	}
+    private StudentResponse mapToResponse(User user) {
+        return StudentResponse.builder()
+                .id(user.getId())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .email(user.getEmail())
+                .studentId(user.getStudentId())
+                .schoolId(user.getSchoolId())
+                .status(user.getStatus())
+                .createdAt(user.getCreatedAt())
+                .build();
+    }
 }

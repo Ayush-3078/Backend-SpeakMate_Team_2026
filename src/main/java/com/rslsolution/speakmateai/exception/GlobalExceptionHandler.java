@@ -33,18 +33,6 @@ public class GlobalExceptionHandler {
 		return new ResponseEntity<>(response, HttpStatus.CONFLICT);
 	}
 
-	@ExceptionHandler(DuplicateSchoolCodeException.class)
-	public ResponseEntity<Map<String, Object>> handleDuplicateSchoolCode(DuplicateSchoolCodeException ex) {
-		logException("handleDuplicateSchoolCode", ex);
-
-		Map<String, Object> response = new HashMap<>();
-		response.put("timestamp", LocalDateTime.now());
-		response.put("status", HttpStatus.CONFLICT.value());
-		response.put("message", ex.getMessage());
-
-		return new ResponseEntity<>(response, HttpStatus.CONFLICT);
-	}
-
 	@ExceptionHandler(UserNotFoundException.class)
 	public ResponseEntity<Map<String, Object>> handleUserNotFound(UserNotFoundException ex) {
 		logException("handleUserNotFound", ex);
@@ -57,9 +45,9 @@ public class GlobalExceptionHandler {
 		return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
 	}
 
-	@ExceptionHandler(SchoolNotFoundException.class)
-	public ResponseEntity<Map<String, Object>> handleSchoolNotFound(SchoolNotFoundException ex) {
-		logException("handleSchoolNotFound", ex);
+	@ExceptionHandler(ResourceNotFoundException.class)
+	public ResponseEntity<Map<String, Object>> handleResourceNotFound(ResourceNotFoundException ex) {
+		logException("handleResourceNotFound", ex);
 
 		Map<String, Object> response = new HashMap<>();
 		response.put("timestamp", LocalDateTime.now());
@@ -208,6 +196,7 @@ public class GlobalExceptionHandler {
 		logException("handleInvalidCredentials", ex);
 
 		Map<String, Object> response = new HashMap<>();
+		response.put("success", false);
 		response.put("timestamp", LocalDateTime.now());
 		response.put("status", HttpStatus.UNAUTHORIZED.value());
 		response.put("message", ex.getMessage());
@@ -232,23 +221,12 @@ public class GlobalExceptionHandler {
 		logException("handleIllegalArgument", ex);
 
 		Map<String, Object> response = new HashMap<>();
+		response.put("success", false);
 		response.put("timestamp", LocalDateTime.now());
 		response.put("status", HttpStatus.BAD_REQUEST.value());
 		response.put("message", ex.getMessage());
 
 		return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-	}
-
-	@ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
-	public ResponseEntity<Map<String, Object>> handleAccessDenied(org.springframework.security.access.AccessDeniedException ex) {
-		logException("handleAccessDenied", ex);
-
-		Map<String, Object> response = new HashMap<>();
-		response.put("timestamp", LocalDateTime.now());
-		response.put("status", HttpStatus.FORBIDDEN.value());
-		response.put("message", "Access Denied");
-
-		return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
 	}
 
 	@ExceptionHandler(Exception.class)

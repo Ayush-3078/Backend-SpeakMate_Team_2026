@@ -1,20 +1,13 @@
 package com.rslsolution.speakmateai.repository;
 
-import java.util.Optional;
-
+import com.rslsolution.speakmateai.entity.School;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
-import com.rslsolution.speakmateai.entity.School;
+import java.util.Optional;
 
 @Repository
-public interface SchoolRepository extends JpaRepository<School, Long>, JpaSpecificationExecutor<School> {
-
-	boolean existsBySchoolCode(String schoolCode);
-
-	boolean existsBySchoolCodeAndIdNot(String schoolCode, Long id);
-
-	Optional<School> findBySchoolCode(String schoolCode);
-
+public interface SchoolRepository extends JpaRepository<School, Long> {
+    Optional<School> findByName(String name);
+    boolean existsByName(String name);
 }

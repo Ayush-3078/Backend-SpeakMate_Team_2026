@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.rslsolution.speakmateai.dto.response.*;
 import com.rslsolution.speakmateai.entity.*;
+import com.rslsolution.speakmateai.enums.Role;
 import com.rslsolution.speakmateai.exception.UserNotFoundException;
 import com.rslsolution.speakmateai.repository.*;
 import com.rslsolution.speakmateai.service.DashboardService;
@@ -36,6 +37,7 @@ public class DashboardServiceImpl implements DashboardService {
 	private final AchievementRepository achievementRepository;
 	private final NotificationRepository notificationRepository;
 	private final ChatSessionRepository chatSessionRepository;
+	private final AdminRepository adminRepository;
 
 	public DashboardServiceImpl(
 			UserRepository userRepository,
@@ -49,7 +51,8 @@ public class DashboardServiceImpl implements DashboardService {
 			LessonProgressRepository lessonProgressRepository,
 			AchievementRepository achievementRepository,
 			NotificationRepository notificationRepository,
-			ChatSessionRepository chatSessionRepository) {
+			ChatSessionRepository chatSessionRepository,
+			AdminRepository adminRepository) {
 		this.userRepository = userRepository;
 		this.progressRepository = progressRepository;
 		this.onboardingRepository = onboardingRepository;
@@ -62,12 +65,27 @@ public class DashboardServiceImpl implements DashboardService {
 		this.achievementRepository = achievementRepository;
 		this.notificationRepository = notificationRepository;
 		this.chatSessionRepository = chatSessionRepository;
+		this.adminRepository = adminRepository;
 	}
 
 	private User getCurrentUser() {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		return userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		String email = authentication.getName();
+		
+		User user = userRepository.findByEmail(email).orElse(null);
+		if (user != null) {
+			return user;
+		}
+		
+		Admin admin = adminRepository.findByEmail(email).orElse(null);
+		if (admin != null && admin.getRole() == Role.SUPER_ADMIN) {
+			User proxyAdmin = new User();
+			proxyAdmin.setEmail(admin.getEmail());
+			proxyAdmin.setRole(admin.getRole());
+			return proxyAdmin;
+		}
+
+		throw new UserNotFoundException("User not found");
 	}
 
 	private LessonResponse mapToLessonResponse(Lesson l, LessonProgress p) {
@@ -634,23 +652,6 @@ public class DashboardServiceImpl implements DashboardService {
 			return activities.subList(0, 10);
 		}
 		return activities;
-	}
-
-	@Override
-	public DashboardOverviewResponse getDashboardOverview() {
-		long totalUsers = userRepository.count();
-		long schoolUsers = userRepository.countByUserType("School");
-		long activeUsers = userRepository.countByActiveTrue();
-		long inactiveUsers = userRepository.countByActiveFalse();
-		long newUsers = userRepository.countByCreatedAtAfter(LocalDateTime.now().minusDays(7));
-
-		return DashboardOverviewResponse.builder()
-				.totalUsers((int) totalUsers)
-				.schoolUsers((int) schoolUsers)
-				.activeUsers((int) activeUsers)
-				.inactiveUsers((int) inactiveUsers)
-				.newUsers((int) newUsers)
-				.build();
 	}
 
 }

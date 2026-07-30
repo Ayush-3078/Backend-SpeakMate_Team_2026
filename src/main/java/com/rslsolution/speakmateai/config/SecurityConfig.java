@@ -6,7 +6,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -18,21 +17,24 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.rslsolution.speakmateai.security.AdminJwtAuthenticationFilter;
 import com.rslsolution.speakmateai.security.JwtAuthenticationFilter;
 import com.rslsolution.speakmateai.security.RequestLoggingFilter;
 
 import java.util.List;
 
 @Configuration
-@EnableMethodSecurity
 public class SecurityConfig {
 
 	private final JwtAuthenticationFilter jwtAuthenticationFilter;
 	private final RequestLoggingFilter requestLoggingFilter;
+	private final AdminJwtAuthenticationFilter adminJwtAuthenticationFilter;
 
-	public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, RequestLoggingFilter requestLoggingFilter) {
+	public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, RequestLoggingFilter requestLoggingFilter,
+			AdminJwtAuthenticationFilter adminJwtAuthenticationFilter) {
 		this.jwtAuthenticationFilter = jwtAuthenticationFilter;
 		this.requestLoggingFilter = requestLoggingFilter;
+		this.adminJwtAuthenticationFilter = adminJwtAuthenticationFilter;
 	}
 
 	@Bean
@@ -41,8 +43,15 @@ public class SecurityConfig {
 				.cors(Customizer.withDefaults())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
+						// Admin Auth
+						.requestMatchers("/api/admin/auth/register", "/api/v1/auth/admin/login",
+								"/api/v1/auth/admin/forgot-password", "/api/v1/auth/admin/verify-otp",
+								"/api/v1/auth/admin/reset-password", "/api/v1/auth/admin/refresh-token")
+						.permitAll()
+						.requestMatchers("/api/v1/admin/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_ADMIN")
 						// Auth endpoints
 						.requestMatchers(
+								"/api/v1/auth/login",
 								"/api/users/register", "/api/users/login",
 								"/api/users/google-login", "/api/users/send-registration-otp",
 								"/api/users/send-delete-account-otp", "/api/users/delete-account",
@@ -62,6 +71,7 @@ public class SecurityConfig {
 				.httpBasic(Customizer.withDefaults());
 
 		http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+		http.addFilterBefore(adminJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 		http.addFilterBefore(requestLoggingFilter, JwtAuthenticationFilter.class);
 
 		return http.build();

@@ -3,7 +3,7 @@ package com.rslsolution.speakmateai.entity;
 import java.time.LocalDateTime;
 
 import com.rslsolution.speakmateai.enums.Role;
-import com.rslsolution.speakmateai.enums.Status;
+import com.rslsolution.speakmateai.enums.UserType;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -13,8 +13,6 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -61,8 +59,20 @@ public class User {
 	@Column(nullable = false)
 	private Role role;
 
+	@Builder.Default
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private UserType userType = UserType.STANDARD;
+
 	@Column(columnDefinition = "TEXT")
 	private String avatar;
+
+	private Long schoolId;
+
+	private String studentId;
+
+	@Enumerated(EnumType.STRING)
+	private com.rslsolution.speakmateai.enums.Status status;
 
 	@Builder.Default
 	@Column(nullable = false)
@@ -99,6 +109,10 @@ public class User {
 
 	private LocalDateTime resetOtpExpiry;
 
+	private String emailVerificationToken;
+
+	private boolean emailVerified;
+
 	// Onboarding fields
 	private String nativeLanguage;
 
@@ -114,23 +128,22 @@ public class User {
 
 	private String ageGroup;
 
-	private String userType;
-
 	private String interests;
 
-	@Column(name = "school_id", insertable = false, updatable = false)
-	private Long schoolId;
-
-	@Column(name = "student_id", unique = true)
-	private String studentId;
-
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false)
-	private Status status = Status.ACTIVE;
-
-	@ManyToOne
-	@JoinColumn(name = "school_id")
-	private School school;
+	// School User fields
+	private String phone;
+	
+	private String schoolName;
+	
+	private String standard;
+	
+	private String division;
+	
+	private String rollNumber;
+	
+	private String parentName;
+	
+	private String parentPhone;
 
 	@OneToMany(mappedBy = "user", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
 	private java.util.List<Progress> progressList;
@@ -190,6 +203,15 @@ public class User {
 	public String getAvatar() { return avatar; }
 	public void setAvatar(String avatar) { this.avatar = avatar; }
 
+	public Long getSchoolId() { return schoolId; }
+	public void setSchoolId(Long schoolId) { this.schoolId = schoolId; }
+
+	public String getStudentId() { return studentId; }
+	public void setStudentId(String studentId) { this.studentId = studentId; }
+
+	public com.rslsolution.speakmateai.enums.Status getStatus() { return status; }
+	public void setStatus(com.rslsolution.speakmateai.enums.Status status) { this.status = status; }
+
 	public boolean isActive() { return active; }
 	public void setActive(boolean active) { this.active = active; }
 
@@ -220,6 +242,12 @@ public class User {
 	public LocalDateTime getResetOtpExpiry() { return resetOtpExpiry; }
 	public void setResetOtpExpiry(LocalDateTime resetOtpExpiry) { this.resetOtpExpiry = resetOtpExpiry; }
 
+	public String getEmailVerificationToken() { return emailVerificationToken; }
+	public void setEmailVerificationToken(String emailVerificationToken) { this.emailVerificationToken = emailVerificationToken; }
+
+	public boolean isEmailVerified() { return emailVerified; }
+	public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }
+
 	public String getNativeLanguage() { return nativeLanguage; }
 	public void setNativeLanguage(String nativeLanguage) { this.nativeLanguage = nativeLanguage; }
 
@@ -238,29 +266,35 @@ public class User {
 	public String getPreferredAccent() { return preferredAccent; }
 	public void setPreferredAccent(String preferredAccent) { this.preferredAccent = preferredAccent; }
 
-	public String getAgeGroup() { return ageGroup; }
-	public void setAgeGroup(String ageGroup) { this.ageGroup = ageGroup; }
-
-	public String getUserType() { return userType; }
-	public void setUserType(String userType) { this.userType = userType; }
-
 	public String getInterests() { return interests; }
 	public void setInterests(String interests) { this.interests = interests; }
 
-	public Long getSchoolId() { return schoolId; }
-	public void setSchoolId(Long schoolId) { this.schoolId = schoolId; }
+	public String getPhone() { return phone; }
+	public void setPhone(String phone) { this.phone = phone; }
 
-	public String getStudentId() { return studentId; }
-	public void setStudentId(String studentId) { this.studentId = studentId; }
+	public String getSchoolName() { return schoolName; }
+	public void setSchoolName(String schoolName) { this.schoolName = schoolName; }
 
-	public Status getStatus() { return status; }
-	public void setStatus(Status status) { this.status = status; }
+	public String getStandard() { return standard; }
+	public void setStandard(String standard) { this.standard = standard; }
 
-	public School getSchool() { return school; }
-	public void setSchool(School school) { this.school = school; }
+	public String getDivision() { return division; }
+	public void setDivision(String division) { this.division = division; }
+
+	public String getRollNumber() { return rollNumber; }
+	public void setRollNumber(String rollNumber) { this.rollNumber = rollNumber; }
+
+	public String getParentName() { return parentName; }
+	public void setParentName(String parentName) { this.parentName = parentName; }
+
+	public String getParentPhone() { return parentPhone; }
+	public void setParentPhone(String parentPhone) { this.parentPhone = parentPhone; }
 
 	public String getExpoPushToken() { return expoPushToken; }
 	public void setExpoPushToken(String expoPushToken) { this.expoPushToken = expoPushToken; }
+
+	public UserType getUserType() { return userType; }
+	public void setUserType(UserType userType) { this.userType = userType; }
 
 	public static UserBuilder builder() {
 		return new UserBuilder();
@@ -274,6 +308,9 @@ public class User {
 		private String password;
 		private Role role;
 		private String avatar;
+		private Long schoolId;
+		private String studentId;
+		private com.rslsolution.speakmateai.enums.Status status;
 		private boolean active = true;
 		private LocalDateTime createdAt;
 		private LocalDateTime updatedAt;
@@ -284,20 +321,24 @@ public class User {
 		private LocalDateTime resetPasswordTokenExpiry;
 		private String resetOtp;
 		private LocalDateTime resetOtpExpiry;
+		private String emailVerificationToken;
+		private boolean emailVerified;
 		private String nativeLanguage;
 		private String englishLevel;
 		private String learningGoal;
 		private Integer dailyGoalMinutes;
 		private String preferredVoice;
 		private String preferredAccent;
-		private String ageGroup;
-		private String userType;
 		private String interests;
-		private Long schoolId;
-		private String studentId;
-		private Status status;
-		private School school;
 		private String expoPushToken;
+		private UserType userType = UserType.STANDARD;
+		private String phone;
+		private String schoolName;
+		private String standard;
+		private String division;
+		private String rollNumber;
+		private String parentName;
+		private String parentPhone;
 
 		public UserBuilder id(Long id) { this.id = id; return this; }
 		public UserBuilder firstName(String firstName) { this.firstName = firstName; return this; }
@@ -306,6 +347,9 @@ public class User {
 		public UserBuilder password(String password) { this.password = password; return this; }
 		public UserBuilder role(Role role) { this.role = role; return this; }
 		public UserBuilder avatar(String avatar) { this.avatar = avatar; return this; }
+		public UserBuilder schoolId(Long schoolId) { this.schoolId = schoolId; return this; }
+		public UserBuilder studentId(String studentId) { this.studentId = studentId; return this; }
+		public UserBuilder status(com.rslsolution.speakmateai.enums.Status status) { this.status = status; return this; }
 		public UserBuilder active(boolean active) { this.active = active; return this; }
 		public UserBuilder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
 		public UserBuilder updatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; return this; }
@@ -316,20 +360,24 @@ public class User {
 		public UserBuilder resetPasswordTokenExpiry(LocalDateTime resetPasswordTokenExpiry) { this.resetPasswordTokenExpiry = resetPasswordTokenExpiry; return this; }
 		public UserBuilder resetOtp(String resetOtp) { this.resetOtp = resetOtp; return this; }
 		public UserBuilder resetOtpExpiry(LocalDateTime resetOtpExpiry) { this.resetOtpExpiry = resetOtpExpiry; return this; }
+		public UserBuilder emailVerificationToken(String emailVerificationToken) { this.emailVerificationToken = emailVerificationToken; return this; }
+		public UserBuilder emailVerified(boolean emailVerified) { this.emailVerified = emailVerified; return this; }
 		public UserBuilder nativeLanguage(String nativeLanguage) { this.nativeLanguage = nativeLanguage; return this; }
 		public UserBuilder englishLevel(String englishLevel) { this.englishLevel = englishLevel; return this; }
 		public UserBuilder learningGoal(String learningGoal) { this.learningGoal = learningGoal; return this; }
 		public UserBuilder dailyGoalMinutes(Integer dailyGoalMinutes) { this.dailyGoalMinutes = dailyGoalMinutes; return this; }
 		public UserBuilder preferredVoice(String preferredVoice) { this.preferredVoice = preferredVoice; return this; }
 		public UserBuilder preferredAccent(String preferredAccent) { this.preferredAccent = preferredAccent; return this; }
-		public UserBuilder ageGroup(String ageGroup) { this.ageGroup = ageGroup; return this; }
-		public UserBuilder userType(String userType) { this.userType = userType; return this; }
 		public UserBuilder interests(String interests) { this.interests = interests; return this; }
-		public UserBuilder schoolId(Long schoolId) { this.schoolId = schoolId; return this; }
-		public UserBuilder studentId(String studentId) { this.studentId = studentId; return this; }
-		public UserBuilder status(Status status) { this.status = status; return this; }
-		public UserBuilder school(School school) { this.school = school; return this; }
 		public UserBuilder expoPushToken(String expoPushToken) { this.expoPushToken = expoPushToken; return this; }
+		public UserBuilder userType(UserType userType) { this.userType = userType; return this; }
+		public UserBuilder phone(String phone) { this.phone = phone; return this; }
+		public UserBuilder schoolName(String schoolName) { this.schoolName = schoolName; return this; }
+		public UserBuilder standard(String standard) { this.standard = standard; return this; }
+		public UserBuilder division(String division) { this.division = division; return this; }
+		public UserBuilder rollNumber(String rollNumber) { this.rollNumber = rollNumber; return this; }
+		public UserBuilder parentName(String parentName) { this.parentName = parentName; return this; }
+		public UserBuilder parentPhone(String parentPhone) { this.parentPhone = parentPhone; return this; }
 
 		public User build() {
 			User user = new User();
@@ -340,6 +388,9 @@ public class User {
 			user.setPassword(password);
 			user.setRole(role);
 			user.setAvatar(avatar);
+			user.setSchoolId(schoolId);
+			user.setStudentId(studentId);
+			user.setStatus(status);
 			user.setActive(active);
 			user.setCreatedAt(createdAt);
 			user.setUpdatedAt(updatedAt);
@@ -350,20 +401,24 @@ public class User {
 			user.setResetPasswordTokenExpiry(resetPasswordTokenExpiry);
 			user.setResetOtp(resetOtp);
 			user.setResetOtpExpiry(resetOtpExpiry);
+			user.setEmailVerificationToken(emailVerificationToken);
+			user.setEmailVerified(emailVerified);
 			user.setNativeLanguage(nativeLanguage);
 			user.setEnglishLevel(englishLevel);
 			user.setLearningGoal(learningGoal);
 			user.setDailyGoalMinutes(dailyGoalMinutes);
 			user.setPreferredVoice(preferredVoice);
 			user.setPreferredAccent(preferredAccent);
-			user.setAgeGroup(ageGroup);
-			user.setUserType(userType);
 			user.setInterests(interests);
-			user.setSchoolId(schoolId);
-			user.setStudentId(studentId);
-			user.setStatus(status);
-			user.setSchool(school);
 			user.setExpoPushToken(expoPushToken);
+			user.setUserType(userType);
+			user.setPhone(phone);
+			user.setSchoolName(schoolName);
+			user.setStandard(standard);
+			user.setDivision(division);
+			user.setRollNumber(rollNumber);
+			user.setParentName(parentName);
+			user.setParentPhone(parentPhone);
 			return user;
 		}
 	}

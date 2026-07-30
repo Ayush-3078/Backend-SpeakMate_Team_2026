@@ -51,8 +51,6 @@ public class UserResponse {
 
 	private String ageGroup;
 
-	private String userType;
-
 	private String interests;
 
 	public Long getId() { return id; }
@@ -109,9 +107,6 @@ public class UserResponse {
 	public String getAgeGroup() { return ageGroup; }
 	public void setAgeGroup(String ageGroup) { this.ageGroup = ageGroup; }
 
-	public String getUserType() { return userType; }
-	public void setUserType(String userType) { this.userType = userType; }
-
 	public String getInterests() { return interests; }
 	public void setInterests(String interests) { this.interests = interests; }
 
@@ -138,7 +133,6 @@ public class UserResponse {
 		private String preferredVoice;
 		private String preferredAccent;
 		private String ageGroup;
-		private String userType;
 		private String interests;
 
 		public UserResponseBuilder id(Long id) { this.id = id; return this; }
@@ -159,7 +153,6 @@ public class UserResponse {
 		public UserResponseBuilder preferredVoice(String preferredVoice) { this.preferredVoice = preferredVoice; return this; }
 		public UserResponseBuilder preferredAccent(String preferredAccent) { this.preferredAccent = preferredAccent; return this; }
 		public UserResponseBuilder ageGroup(String ageGroup) { this.ageGroup = ageGroup; return this; }
-		public UserResponseBuilder userType(String userType) { this.userType = userType; return this; }
 		public UserResponseBuilder interests(String interests) { this.interests = interests; return this; }
 
 		public UserResponse build() {
@@ -180,10 +173,9 @@ public class UserResponse {
             obj.setLearningGoal(learningGoal);
             obj.setDailyGoalMinutes(dailyGoalMinutes);
             obj.setPreferredVoice(preferredVoice);
-			obj.setPreferredAccent(preferredAccent);
-			obj.setAgeGroup(ageGroup);
-			obj.setUserType(userType);
-			obj.setInterests(interests);
+            obj.setPreferredAccent(preferredAccent);
+            obj.setAgeGroup(ageGroup);
+            obj.setInterests(interests);
             return obj;
         }
 	}
