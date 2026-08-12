@@ -1,23 +1,24 @@
 package com.rslsolution.speakmateai.service;
 
-import java.util.List;
-
-import com.rslsolution.speakmateai.dto.request.TeacherRequest;
-import com.rslsolution.speakmateai.dto.response.TeacherResponse;
-import org.springframework.web.multipart.MultipartFile;
-import com.rslsolution.speakmateai.dto.response.StudentImportResponse;
+import com.rslsolution.speakmateai.dto.response.TeacherAnalyticsResponse;
+import com.rslsolution.speakmateai.dto.response.TeacherDashboardResponse;
+import com.rslsolution.speakmateai.dto.response.TeacherProfileResponse;
+import com.rslsolution.speakmateai.dto.response.TeacherReportsResponse;
+import com.rslsolution.speakmateai.dto.response.TeacherStudentDetailResponse;
+import com.rslsolution.speakmateai.dto.response.TeacherStudentsListResponse;
+import com.rslsolution.speakmateai.enums.Status;
 
 public interface TeacherService {
 
-    List<TeacherResponse> getAllTeachers();
+    TeacherDashboardResponse getTeacherDashboard();
 
-    TeacherResponse createTeacher(TeacherRequest request);
+    TeacherStudentsListResponse getStudents(String search, Status status);
 
-    TeacherResponse getTeacherById(Long id);
+    TeacherStudentDetailResponse getStudentDetail(Long studentId);
 
-    TeacherResponse updateTeacher(Long id, TeacherRequest request);
+    TeacherAnalyticsResponse getAnalytics();
 
-    void deleteTeacher(Long id);
+    TeacherReportsResponse getReports();
 
-    void resetPassword(Long id, String newPassword);
+    TeacherProfileResponse getProfile();
 }

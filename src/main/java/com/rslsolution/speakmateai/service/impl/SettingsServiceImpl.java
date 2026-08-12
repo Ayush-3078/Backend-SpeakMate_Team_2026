@@ -2,9 +2,11 @@ package com.rslsolution.speakmateai.service.impl;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.rslsolution.speakmateai.dto.request.ChangePasswordRequest;
 import com.rslsolution.speakmateai.dto.request.SettingsRequest;
 import com.rslsolution.speakmateai.dto.response.SettingsResponse;
 import com.rslsolution.speakmateai.entity.Settings;
@@ -21,10 +23,12 @@ public class SettingsServiceImpl implements SettingsService {
 
 	private final SettingsRepository settingsRepository;
 	private final UserRepository userRepository;
+	private final PasswordEncoder passwordEncoder;
 
-	public SettingsServiceImpl(SettingsRepository settingsRepository, UserRepository userRepository) {
+	public SettingsServiceImpl(SettingsRepository settingsRepository, UserRepository userRepository, PasswordEncoder passwordEncoder) {
 		this.settingsRepository = settingsRepository;
 		this.userRepository = userRepository;
+		this.passwordEncoder = passwordEncoder;
 	}
 
 	@Override
@@ -111,12 +115,53 @@ public class SettingsServiceImpl implements SettingsService {
 		settingsRepository.delete(settings);
 	}
 
+	@Override
+	public void changePassword(ChangePasswordRequest request) {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+		User user = userRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("User not found"));
+
+		if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+			throw new RuntimeException("Current password is incorrect");
+		}
+
+		if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+			throw new RuntimeException("New password and confirm password do not match");
+		}
+
+		user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+		userRepository.save(user);
+	}
+
+	@Override
+	public SettingsResponse updateTwoFactorEnabled(Boolean enabled) {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+		User user = userRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("User not found"));
+
+		Settings settings = settingsRepository.findByUser(user)
+				.orElseGet(() -> {
+					Settings newSettings = Settings.builder()
+							.user(user)
+							.build();
+					return settingsRepository.save(newSettings);
+				});
+
+		settings.setTwoFactorEnabled(enabled);
+		Settings updatedSettings = settingsRepository.save(settings);
+
+		return mapToResponse(updatedSettings);
+	}
+
 	private SettingsResponse mapToResponse(Settings settings) {
 
 		return SettingsResponse.builder().id(settings.getId()).darkMode(settings.getDarkMode())
 				.notificationsEnabled(settings.getNotificationsEnabled()).language(settings.getLanguage())
 				.aiVoice(settings.getAiVoice()).soundEffects(settings.getSoundEffects())
 				.autoPlayAudio(settings.getAutoPlayAudio()).dailyReminder(settings.getDailyReminder())
+				.twoFactorEnabled(settings.getTwoFactorEnabled())
 				.createdAt(settings.getCreatedAt()).updatedAt(settings.getUpdatedAt()).build();
 	}
 }

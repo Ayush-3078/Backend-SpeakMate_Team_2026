@@ -10,4 +10,5 @@ import com.rslsolution.speakmateai.entity.ClassRoom;
 @Repository
 public interface ClassRoomRepository extends JpaRepository<ClassRoom, Long> {
 	List<ClassRoom> findBySchoolId(Long schoolId);
+	List<ClassRoom> findByTeacherId(Long teacherId);
 }
