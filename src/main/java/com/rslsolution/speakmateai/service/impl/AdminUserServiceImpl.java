@@ -286,7 +286,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         int xp = 0;
 
         if (user instanceof Student student) {
-            Progress progress = student.getProgressList() != null && !student.getProgressList().isEmpty()
+            progress = student.getProgressList() != null && !student.getProgressList().isEmpty()
                     ? student.getProgressList().get(0)
                     : null;
 
