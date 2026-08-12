@@ -14,6 +14,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -134,8 +135,8 @@ public class User {
 	
 	private String parentPhone;
 
-	@OneToMany(mappedBy = "user", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
-	private java.util.List<Progress> progressList;
+	@OneToOne(mappedBy = "user", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
+	private Progress progress;
 
 	/** Expo push notification token — updated from the mobile app on every launch */
 	@Column(length = 500)
@@ -270,6 +271,9 @@ public class User {
 	public UserType getUserType() { return userType; }
 	public void setUserType(UserType userType) { this.userType = userType; }
 
+	public Progress getProgress() { return progress; }
+	public void setProgress(Progress progress) { this.progress = progress; }
+
 	public static UserBuilder builder() {
 		return new UserBuilder();
 	}
@@ -308,6 +312,7 @@ public class User {
 		private String rollNumber;
 		private String parentName;
 		private String parentPhone;
+		private Progress progress;
 
 		public UserBuilder id(Long id) { this.id = id; return this; }
 		public UserBuilder firstName(String firstName) { this.firstName = firstName; return this; }
@@ -342,6 +347,7 @@ public class User {
 		public UserBuilder rollNumber(String rollNumber) { this.rollNumber = rollNumber; return this; }
 		public UserBuilder parentName(String parentName) { this.parentName = parentName; return this; }
 		public UserBuilder parentPhone(String parentPhone) { this.parentPhone = parentPhone; return this; }
+		public UserBuilder progress(Progress progress) { this.progress = progress; return this; }
 
 		public User build() {
 			User user = new User();
@@ -378,6 +384,7 @@ public class User {
 			user.setRollNumber(rollNumber);
 			user.setParentName(parentName);
 			user.setParentPhone(parentPhone);
+			user.setProgress(progress);
 			return user;
 		}
 	}

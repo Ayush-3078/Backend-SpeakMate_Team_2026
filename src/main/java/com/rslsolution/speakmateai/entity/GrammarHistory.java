@@ -44,6 +44,9 @@ public class GrammarHistory {
 
 	private Double grammarScore;
 
+	@Builder.Default
+	private Integer mistakesCount = 0;
+
 	@Column(nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
@@ -70,6 +73,9 @@ public class GrammarHistory {
 	public Double getGrammarScore() { return grammarScore; }
 	public void setGrammarScore(Double grammarScore) { this.grammarScore = grammarScore; }
 
+	public Integer getMistakesCount() { return mistakesCount; }
+	public void setMistakesCount(Integer mistakesCount) { this.mistakesCount = mistakesCount; }
+
 	public LocalDateTime getCreatedAt() { return createdAt; }
 	public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
@@ -84,6 +90,7 @@ public class GrammarHistory {
 		private String correctedText;
 		private String explanation;
 		private Double grammarScore;
+		private Integer mistakesCount = 0;
 		private LocalDateTime createdAt;
 
 		public GrammarHistoryBuilder id(Long id) { this.id = id; return this; }
@@ -92,6 +99,7 @@ public class GrammarHistory {
 		public GrammarHistoryBuilder correctedText(String correctedText) { this.correctedText = correctedText; return this; }
 		public GrammarHistoryBuilder explanation(String explanation) { this.explanation = explanation; return this; }
 		public GrammarHistoryBuilder grammarScore(Double grammarScore) { this.grammarScore = grammarScore; return this; }
+		public GrammarHistoryBuilder mistakesCount(Integer mistakesCount) { this.mistakesCount = mistakesCount; return this; }
 		public GrammarHistoryBuilder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
 
 		public GrammarHistory build() {
@@ -102,6 +110,7 @@ public class GrammarHistory {
             obj.setCorrectedText(correctedText);
             obj.setExplanation(explanation);
             obj.setGrammarScore(grammarScore);
+            obj.setMistakesCount(mistakesCount);
             obj.setCreatedAt(createdAt);
             return obj;
         }

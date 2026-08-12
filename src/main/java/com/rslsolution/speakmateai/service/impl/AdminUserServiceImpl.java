@@ -41,6 +41,10 @@ import com.rslsolution.speakmateai.enums.Role;
 import com.rslsolution.speakmateai.mapper.AdminUserMapper;
 import com.rslsolution.speakmateai.repository.UserRepository;
 import com.rslsolution.speakmateai.repository.UserSpecification;
+import com.rslsolution.speakmateai.repository.ProgressRepository;
+import com.rslsolution.speakmateai.repository.SpeakingSessionRepository;
+import com.rslsolution.speakmateai.repository.UserSubscriptionRepository;
+import com.rslsolution.speakmateai.enums.SubscriptionStatus;
 import com.rslsolution.speakmateai.service.AdminUserService;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -52,11 +56,19 @@ public class AdminUserServiceImpl implements AdminUserService {
     private final UserRepository userRepository;
     private final AdminUserMapper adminUserMapper;
     private final PasswordEncoder passwordEncoder;
+    private final ProgressRepository progressRepository;
+    private final SpeakingSessionRepository speakingSessionRepository;
+    private final UserSubscriptionRepository userSubscriptionRepository;
 
-    public AdminUserServiceImpl(UserRepository userRepository, AdminUserMapper adminUserMapper, PasswordEncoder passwordEncoder) {
+    public AdminUserServiceImpl(UserRepository userRepository, AdminUserMapper adminUserMapper, PasswordEncoder passwordEncoder,
+                                ProgressRepository progressRepository, SpeakingSessionRepository speakingSessionRepository,
+                                UserSubscriptionRepository userSubscriptionRepository) {
         this.userRepository = userRepository;
         this.adminUserMapper = adminUserMapper;
         this.passwordEncoder = passwordEncoder;
+        this.progressRepository = progressRepository;
+        this.speakingSessionRepository = speakingSessionRepository;
+        this.userSubscriptionRepository = userSubscriptionRepository;
     }
 
     @Override
@@ -209,6 +221,10 @@ public class AdminUserServiceImpl implements AdminUserService {
         long thisWeekRegistrations = userRepository.countByCreatedAtBetween(startOfWeek, now);
         long thisMonthRegistrations = userRepository.countByCreatedAtBetween(startOfMonth, now);
 
+        long premiumUsers = userSubscriptionRepository.countBySubscriptionStatus(SubscriptionStatus.ACTIVE);
+        double averageLearningTimeMinutes = progressRepository.getAveragePracticeMinutes();
+        double averageSpeakingScore = speakingSessionRepository.getAverageSpeakingScore();
+
         return UserStatisticsResponse.builder()
                 .totalUsers(totalUsers)
                 .activeUsers(activeUsers)
@@ -216,9 +232,9 @@ public class AdminUserServiceImpl implements AdminUserService {
                 .todayRegistrations(todayRegistrations)
                 .thisWeekRegistrations(thisWeekRegistrations)
                 .thisMonthRegistrations(thisMonthRegistrations)
-                .premiumUsers(0) // Feature not yet implemented
-                .averageLearningTimeMinutes(0.0) // Mock until complex analytics implemented
-                .averageSpeakingScore(0.0) // Mock until complex analytics implemented
+                .premiumUsers(premiumUsers)
+                .averageLearningTimeMinutes(Math.round(averageLearningTimeMinutes * 10.0) / 10.0)
+                .averageSpeakingScore(Math.round(averageSpeakingScore * 10.0) / 10.0)
                 .build();
     }
 
@@ -227,8 +243,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
                 
-        Progress progress = user.getProgressList() != null && !user.getProgressList().isEmpty() 
-            ? user.getProgressList().get(0) : null;
+        Progress progress = user.getProgress();
             
         return UserDetailsResponse.builder()
             .id(user.getId())
@@ -251,8 +266,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
                 
-        Progress progress = user.getProgressList() != null && !user.getProgressList().isEmpty() 
-            ? user.getProgressList().get(0) : null;
+        Progress progress = user.getProgress();
             
         int totalSpeaking = user.getSpeakingSessions() != null ? user.getSpeakingSessions().size() : 0;
         int aiChats = user.getChatSessions() != null ? user.getChatSessions().size() : 0;
@@ -366,8 +380,7 @@ public class AdminUserServiceImpl implements AdminUserService {
             completionPercent = user.getLessonProgresses().stream().filter(lp -> lp.getProgressPercent() != null).mapToDouble(LessonProgress::getProgressPercent).average().orElse(0.0);
         }
         
-        Progress progress = user.getProgressList() != null && !user.getProgressList().isEmpty() 
-            ? user.getProgressList().get(0) : null;
+        Progress progress = user.getProgress();
             
         int totalLearningHours = progress != null && progress.getTotalPracticeMinutes() != null ? progress.getTotalPracticeMinutes() / 60 : 0;
 
@@ -416,19 +429,34 @@ public class AdminUserServiceImpl implements AdminUserService {
                 
         int exercises = 0;
         double accuracy = 0.0;
-        int totalMistakes = 0; // mistakesCount does not exist
+        int totalMistakes = 0;
+        double improvementPercentage = 0.0;
         
         if (user.getGrammarHistories() != null && !user.getGrammarHistories().isEmpty()) {
             exercises = user.getGrammarHistories().size();
             accuracy = user.getGrammarHistories().stream().filter(g -> g.getGrammarScore() != null).mapToDouble(GrammarHistory::getGrammarScore).average().orElse(0.0);
-            totalMistakes = 0; // Not available in DB model
+            totalMistakes = user.getGrammarHistories().stream()
+                .filter(g -> g.getMistakesCount() != null)
+                .mapToInt(GrammarHistory::getMistakesCount)
+                .sum();
+            
+            if (exercises >= 2) {
+                List<GrammarHistory> sorted = user.getGrammarHistories().stream()
+                    .sorted(Comparator.comparing(GrammarHistory::getCreatedAt))
+                    .collect(Collectors.toList());
+                double firstScore = sorted.get(0).getGrammarScore() != null ? sorted.get(0).getGrammarScore() : 0.0;
+                double lastScore = sorted.get(sorted.size() - 1).getGrammarScore() != null ? sorted.get(sorted.size() - 1).getGrammarScore() : 0.0;
+                if (firstScore > 0) {
+                    improvementPercentage = ((lastScore - firstScore) / firstScore) * 100.0;
+                }
+            }
         }
 
         return UserGrammarResponse.builder()
             .exercisesCompleted(exercises)
             .accuracy(Math.round(accuracy * 10.0) / 10.0)
             .totalMistakes(totalMistakes)
-            .improvementPercentage(0.0)
+            .improvementPercentage(Math.round(improvementPercentage * 10.0) / 10.0)
             .build();
     }
 

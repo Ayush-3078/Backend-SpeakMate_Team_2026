@@ -1469,94 +1469,61 @@
       "name": "Admin Profile",
       "item": [
         {
-          "name": "Get Profile",
+          "name": "Get Own Profile",
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{admin_token}}"
+                "value": "{{admin_token}}",
+                "type": "text"
               }
             ],
             "url": {
-              "raw": "http://localhost:9091/api/admin/profile",
-              "protocol": "http",
+              "raw": "{{base_url}}/api/admin/profile",
               "host": [
-                "localhost"
+                "{{base_url}}"
               ],
-              "port": "9091",
               "path": [
                 "api",
                 "admin",
                 "profile"
-              ]
+              ],
+              "query": []
             }
           }
         },
         {
-          "name": "Update Profile",
+          "name": "Update Own Profile",
           "request": {
             "method": "PUT",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{admin_token}}"
+                "value": "{{admin_token}}",
+                "type": "text"
               },
               {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"fullName\": \"Jane Doe\",\n  \"phone\": \"1234567890\",\n  \"department\": \"IT\",\n  \"designation\": \"Manager\",\n  \"location\": \"NY\"\n}"
-            },
             "url": {
-              "raw": "http://localhost:9091/api/admin/profile",
-              "protocol": "http",
+              "raw": "{{base_url}}/api/admin/profile",
               "host": [
-                "localhost"
+                "{{base_url}}"
               ],
-              "port": "9091",
               "path": [
                 "api",
                 "admin",
                 "profile"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Change Password",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{admin_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+              ],
+              "query": []
+            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"currentPassword\": \"Password123!\",\n  \"newPassword\": \"NewPassword123!\",\n  \"confirmPassword\": \"NewPassword123!\"\n}"
-            },
-            "url": {
-              "raw": "http://localhost:9091/api/admin/profile/change-password",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "9091",
-              "path": [
-                "api",
-                "admin",
-                "profile",
-                "change-password"
-              ]
+              "raw": "{\n  \"firstName\": \"Super\",\n  \"lastName\": \"Admin\",\n  \"phone\": \"+19876543210\"\n}"
             }
           }
         }
@@ -1572,21 +1539,21 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{admin_token}}"
+                "value": "{{admin_token}}",
+                "type": "text"
               }
             ],
             "url": {
-              "raw": "http://localhost:9091/api/admin/settings",
-              "protocol": "http",
+              "raw": "{{base_url}}/api/admin/settings",
               "host": [
-                "localhost"
+                "{{base_url}}"
               ],
-              "port": "9091",
               "path": [
                 "api",
                 "admin",
                 "settings"
-              ]
+              ],
+              "query": []
             }
           }
         },
@@ -1597,30 +1564,31 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{admin_token}}"
+                "value": "{{admin_token}}",
+                "type": "text"
               },
               {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"theme\": \"DARK\",\n  \"sidebarCollapsed\": true\n}"
-            },
             "url": {
-              "raw": "http://localhost:9091/api/admin/settings/appearance",
-              "protocol": "http",
+              "raw": "{{base_url}}/api/admin/settings/appearance",
               "host": [
-                "localhost"
+                "{{base_url}}"
               ],
-              "port": "9091",
               "path": [
                 "api",
                 "admin",
                 "settings",
                 "appearance"
-              ]
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"theme\": \"DARK\",\n  \"fontSize\": \"MEDIUM\",\n  \"reducedMotion\": true\n}"
             }
           }
         },
@@ -1631,98 +1599,31 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{admin_token}}"
+                "value": "{{admin_token}}",
+                "type": "text"
               },
               {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"language\": \"fr\"\n}"
-            },
             "url": {
-              "raw": "http://localhost:9091/api/admin/settings/language",
-              "protocol": "http",
+              "raw": "{{base_url}}/api/admin/settings/language",
               "host": [
-                "localhost"
+                "{{base_url}}"
               ],
-              "port": "9091",
               "path": [
                 "api",
                 "admin",
                 "settings",
                 "language"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Update Notifications",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{admin_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+              ],
+              "query": []
+            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"notificationsEnabled\": true,\n  \"emailNotifications\": false,\n  \"systemNotifications\": true\n}"
-            },
-            "url": {
-              "raw": "http://localhost:9091/api/admin/settings/notifications",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "9091",
-              "path": [
-                "api",
-                "admin",
-                "settings",
-                "notifications"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Update Security",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{admin_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"twoFactorEnabled\": true,\n  \"sessionTimeout\": 60\n}"
-            },
-            "url": {
-              "raw": "http://localhost:9091/api/admin/settings/security",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "9091",
-              "path": [
-                "api",
-                "admin",
-                "settings",
-                "security"
-              ]
+              "raw": "{\n  \"language\": \"en\",\n  \"timezone\": \"UTC\"\n}"
             }
           }
         }
@@ -2006,6 +1907,293 @@
                 "users",
                 "1"
               ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Authentication",
+      "item": [
+        {
+          "name": "Admin Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{admin_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "auth",
+                "login"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"SecurePassword123!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Admin Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "auth",
+                "logout"
+              ],
+              "query": []
+            }
+          }
+        },
+        {
+          "name": "Admin Change Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{admin_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/auth/change-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "auth",
+                "change-password"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"SecurePassword123!\",\n  \"newPassword\": \"NewPassword123!\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin School Users",
+      "item": [
+        {
+          "name": "Get All School Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/school-users?page=0&size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "school-users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get School User Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/school-users/statistics",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "school-users",
+                "statistics"
+              ],
+              "query": []
+            }
+          }
+        },
+        {
+          "name": "Create School User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{admin_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/school-users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "school-users"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Alex\",\n  \"lastName\": \"Student\",\n  \"email\": \"alex.student@school.edu\",\n  \"password\": \"Password123!\",\n  \"schoolId\": 1,\n  \"standard\": \"10th\",\n  \"division\": \"A\",\n  \"rollNumber\": \"10A01\",\n  \"active\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Get School User By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/school-users/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "school-users",
+                "1"
+              ],
+              "query": []
+            }
+          }
+        },
+        {
+          "name": "Update School User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{admin_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/school-users/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "school-users",
+                "1"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Alex Updated\",\n  \"lastName\": \"Student\",\n  \"active\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete School User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/school-users/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "school-users",
+                "1"
+              ],
+              "query": []
             }
           }
         }
