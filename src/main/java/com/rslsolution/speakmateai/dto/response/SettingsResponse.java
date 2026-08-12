@@ -29,6 +29,8 @@ public class SettingsResponse {
 
 	private Boolean dailyReminder;
 
+	private Boolean twoFactorEnabled;
+
 	private LocalDateTime createdAt;
 
 	private LocalDateTime updatedAt;
@@ -56,6 +58,9 @@ public class SettingsResponse {
 
 	public Boolean getDailyReminder() { return dailyReminder; }
 	public void setDailyReminder(Boolean dailyReminder) { this.dailyReminder = dailyReminder; }
+
+	public Boolean getTwoFactorEnabled() { return twoFactorEnabled; }
+	public void setTwoFactorEnabled(Boolean twoFactorEnabled) { this.twoFactorEnabled = twoFactorEnabled; }
 
 	public LocalDateTime getCreatedAt() { return createdAt; }
 	public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
@@ -87,6 +92,7 @@ public class SettingsResponse {
 		public SettingsResponseBuilder soundEffects(Boolean soundEffects) { this.soundEffects = soundEffects; return this; }
 		public SettingsResponseBuilder autoPlayAudio(Boolean autoPlayAudio) { this.autoPlayAudio = autoPlayAudio; return this; }
 		public SettingsResponseBuilder dailyReminder(Boolean dailyReminder) { this.dailyReminder = dailyReminder; return this; }
+		public SettingsResponseBuilder twoFactorEnabled(Boolean twoFactorEnabled) { this.twoFactorEnabled = twoFactorEnabled; return this; }
 		public SettingsResponseBuilder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
 		public SettingsResponseBuilder updatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; return this; }
 
@@ -100,6 +106,7 @@ public class SettingsResponse {
             obj.setSoundEffects(soundEffects);
             obj.setAutoPlayAudio(autoPlayAudio);
             obj.setDailyReminder(dailyReminder);
+            obj.setTwoFactorEnabled(twoFactorEnabled);
             obj.setCreatedAt(createdAt);
             obj.setUpdatedAt(updatedAt);
             return obj;

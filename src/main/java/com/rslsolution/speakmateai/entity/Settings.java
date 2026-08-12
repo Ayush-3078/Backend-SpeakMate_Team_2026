@@ -42,6 +42,9 @@ public class Settings {
 	@Builder.Default
 	private Boolean dailyReminder = true;
 
+	@Builder.Default
+	private Boolean twoFactorEnabled = false;
+
 	@Column(nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
@@ -85,6 +88,9 @@ public class Settings {
 	public Boolean getDailyReminder() { return dailyReminder; }
 	public void setDailyReminder(Boolean dailyReminder) { this.dailyReminder = dailyReminder; }
 
+	public Boolean getTwoFactorEnabled() { return twoFactorEnabled; }
+	public void setTwoFactorEnabled(Boolean twoFactorEnabled) { this.twoFactorEnabled = twoFactorEnabled; }
+
 	public LocalDateTime getCreatedAt() { return createdAt; }
 	public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
@@ -105,6 +111,7 @@ public class Settings {
 		private Boolean soundEffects = true;
 		private Boolean autoPlayAudio = true;
 		private Boolean dailyReminder = true;
+		private Boolean twoFactorEnabled = false;
 		private LocalDateTime createdAt;
 		private LocalDateTime updatedAt;
 
@@ -117,6 +124,7 @@ public class Settings {
 		public SettingsBuilder soundEffects(Boolean soundEffects) { this.soundEffects = soundEffects; return this; }
 		public SettingsBuilder autoPlayAudio(Boolean autoPlayAudio) { this.autoPlayAudio = autoPlayAudio; return this; }
 		public SettingsBuilder dailyReminder(Boolean dailyReminder) { this.dailyReminder = dailyReminder; return this; }
+		public SettingsBuilder twoFactorEnabled(Boolean twoFactorEnabled) { this.twoFactorEnabled = twoFactorEnabled; return this; }
 		public SettingsBuilder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
 		public SettingsBuilder updatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; return this; }
 
@@ -131,6 +139,7 @@ public class Settings {
             obj.setSoundEffects(soundEffects);
             obj.setAutoPlayAudio(autoPlayAudio);
             obj.setDailyReminder(dailyReminder);
+            obj.setTwoFactorEnabled(twoFactorEnabled);
             obj.setCreatedAt(createdAt);
             obj.setUpdatedAt(updatedAt);
             return obj;

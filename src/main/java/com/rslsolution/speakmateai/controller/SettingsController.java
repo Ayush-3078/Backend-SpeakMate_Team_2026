@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.rslsolution.speakmateai.dto.request.SettingsRequest;
+import com.rslsolution.speakmateai.dto.request.ChangePasswordRequest;
+import com.rslsolution.speakmateai.dto.request.TwoFactorRequest;
 import com.rslsolution.speakmateai.dto.response.SettingsResponse;
 import com.rslsolution.speakmateai.service.SettingsService;
 
@@ -48,5 +50,16 @@ public class SettingsController {
 		settingsService.deleteSettings();
 
 		return "Settings deleted successfully.";
+	}
+
+	@PostMapping("/change-password")
+	public String changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+		settingsService.changePassword(request);
+		return "Password changed successfully.";
+	}
+
+	@PostMapping("/two-factor")
+	public SettingsResponse updateTwoFactor(@Valid @RequestBody TwoFactorRequest request) {
+		return settingsService.updateTwoFactorEnabled(request.getEnabled());
 	}
 }

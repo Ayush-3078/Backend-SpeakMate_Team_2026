@@ -58,4 +58,7 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 	@org.springframework.data.jpa.repository.Query("SELECT CASE WHEN COUNT(u) > 0 THEN true ELSE false END FROM User u WHERE u.studentId = :studentId AND u.schoolId = :schoolId AND u.role = 'STUDENT'")
 	boolean existsStudentByStudentIdAndSchoolId(@org.springframework.data.repository.query.Param("studentId") String studentId, @org.springframework.data.repository.query.Param("schoolId") Long schoolId);
 
+	@org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE u.schoolId = :schoolId AND u.role = :role")
+	java.util.List<User> findBySchoolIdAndRole(@org.springframework.data.repository.query.Param("schoolId") Long schoolId, @org.springframework.data.repository.query.Param("role") com.rslsolution.speakmateai.enums.Role role);
+
 }
