@@ -31,14 +31,14 @@ import com.rslsolution.speakmateai.dto.response.SpeakingSessionResponse;
 import com.rslsolution.speakmateai.entity.ConversationFeedback;
 import com.rslsolution.speakmateai.entity.ConversationMessage;
 import com.rslsolution.speakmateai.entity.SpeakingSession;
-import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 import com.rslsolution.speakmateai.exception.GroqException;
 import com.rslsolution.speakmateai.exception.SpeakingSessionNotFoundException;
 import com.rslsolution.speakmateai.exception.UserNotFoundException;
 import com.rslsolution.speakmateai.repository.ConversationFeedbackRepository;
 import com.rslsolution.speakmateai.repository.ConversationMessageRepository;
 import com.rslsolution.speakmateai.repository.SpeakingSessionRepository;
-import com.rslsolution.speakmateai.repository.UserRepository;
+import com.rslsolution.speakmateai.repository.StudentRepository;
 import com.rslsolution.speakmateai.entity.Progress;
 import com.rslsolution.speakmateai.repository.ProgressRepository;
 import com.rslsolution.speakmateai.service.SpeakingSessionService;
@@ -60,7 +60,7 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
 	private final SpeakingSessionRepository speakingSessionRepository;
 	private final ConversationMessageRepository messageRepository;
 	private final ConversationFeedbackRepository feedbackRepository;
-	private final UserRepository userRepository;
+	private final StudentRepository studentRepository;
 	private final RestTemplate restTemplate;
 	private final ObjectMapper objectMapper;
 	private final ProgressRepository progressRepository;
@@ -69,7 +69,7 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
 	public SpeakingSessionServiceImpl(SpeakingSessionRepository speakingSessionRepository,
 			ConversationMessageRepository messageRepository,
 			ConversationFeedbackRepository feedbackRepository,
-			UserRepository userRepository,
+			StudentRepository studentRepository,
 			RestTemplate restTemplate,
 			ObjectMapper objectMapper,
 			ProgressRepository progressRepository,
@@ -77,7 +77,7 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
 		this.speakingSessionRepository = speakingSessionRepository;
 		this.messageRepository = messageRepository;
 		this.feedbackRepository = feedbackRepository;
-		this.userRepository = userRepository;
+		this.studentRepository = studentRepository;
 		this.restTemplate = restTemplate;
 		this.objectMapper = objectMapper;
 		this.progressRepository = progressRepository;
@@ -86,13 +86,13 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
 
 	// ── Helpers ───────────────────────────────────────────────────────
 
-	private User currentUser() {
+	private Student currentUser() {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getName())) {
 			throw new UserNotFoundException("User not authenticated");
 		}
-		return userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		return studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
 	}
 
 	private String callGroqChat(List<GroqRequest.Message> messages) {
@@ -182,9 +182,9 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
 
 	@Override
 	public SpeakingSessionResponse createSession(SpeakingSessionRequest request) {
-		User user = currentUser();
+		Student user = currentUser();
 		SpeakingSession session = SpeakingSession.builder()
-				.user(user)
+				.student(user)
 				.topic(request.getTopic())
 				.scenario(request.getTopic())
 				.transcript(request.getTranscript())
@@ -199,8 +199,8 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
 
 	@Override
 	public List<SpeakingSessionResponse> getAllSessions() {
-		User user = currentUser();
-		return speakingSessionRepository.findByUserOrderByCreatedAtDesc(user).stream()
+		Student user = currentUser();
+		return speakingSessionRepository.findByStudentOrderByCreatedAtDesc(user).stream()
 				.map(this::mapToResponse)
 				.toList();
 	}
@@ -239,10 +239,10 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
 
 	@Override
 	public SpeakingSessionResponse startSession(SpeakingStartRequest request) {
-		User user = currentUser();
+		Student user = currentUser();
 
 		SpeakingSession session = SpeakingSession.builder()
-				.user(user)
+				.student(user)
 				.topic(request.getScenario())
 				.scenario(request.getScenario())
 				.duration(0)
@@ -300,7 +300,7 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
 		// 3. Determine Level
 		String chatLevel = request.getLevel();
 		if (chatLevel == null || chatLevel.trim().isEmpty()) {
-			chatLevel = session.getUser().getEnglishLevel();
+			chatLevel = session.getStudent().getEnglishLevel();
 		}
 		if (chatLevel == null || chatLevel.trim().isEmpty()) {
 			chatLevel = "Beginner";
@@ -318,7 +318,7 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
 					"Instructions: Use sophisticated, professional, and diverse vocabulary (C1-C2 levels). Use complex and varied sentence structures, advanced idioms, and academic or business terms. Challenge the learner with nuanced phrasing and detailed stylistic suggestions.\n";
 		}
 
-		User user = session.getUser();
+		Student user = session.getStudent();
 		String ageGroup = user != null ? user.getAgeGroup() : null;
 		String ageInstruction = "";
 		if ("Kids".equalsIgnoreCase(ageGroup)) {
@@ -550,10 +550,10 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
 
 		// Update user's progress
 		try {
-			User user = session.getUser();
-			Progress progress = progressRepository.findByUser(user)
+			Student user = session.getStudent();
+			Progress progress = progressRepository.findByStudent(user)
 					.orElseGet(() -> Progress.builder()
-							.user(user)
+							.student(user)
 							.xp(0)
 							.level(1)
 							.currentStreak(0)
@@ -577,7 +577,7 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
 		// ── Trigger session-end notification ─────────────────────────────
 		try {
 			int sessionMinutes = (int) Math.max(1, Math.ceil(durationSeconds / 60.0));
-			notificationService.createSystemNotification(session.getUser(),
+			notificationService.createSystemNotification(session.getStudent(),
 					"Speaking Session Complete! 🎙️",
 					"Great job! You practiced \"" + session.getScenario() + "\" for " + sessionMinutes + " min and earned " + xp + " XP.");
 		} catch (Exception ignored) {}
@@ -619,8 +619,8 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
 
 	@Override
 	public List<SpeakingHistoryResponse> getSessionHistory() {
-		User user = currentUser();
-		return speakingSessionRepository.findByUserOrderByCreatedAtDesc(user).stream()
+		Student user = currentUser();
+		return speakingSessionRepository.findByStudentOrderByCreatedAtDesc(user).stream()
 				.map(s -> {
 					String preview = "";
 					if (s.getMessages() != null && !s.getMessages().isEmpty()) {

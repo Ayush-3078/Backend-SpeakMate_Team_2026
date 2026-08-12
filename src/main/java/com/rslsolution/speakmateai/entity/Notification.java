@@ -19,7 +19,7 @@ public class Notification {
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "user_id", nullable = false)
-	private User user;
+	private Student student;
 
 	@Column(nullable = false)
 	private String title;
@@ -40,8 +40,8 @@ public class Notification {
 	public Long getId() { return id; }
 	public void setId(Long id) { this.id = id; }
 
-	public User getUser() { return user; }
-	public void setUser(User user) { this.user = user; }
+	public Student getStudent() { return student; }
+	public void setStudent(Student student) { this.student = student; }
 
 	public String getTitle() { return title; }
 	public void setTitle(String title) { this.title = title; }
@@ -61,14 +61,14 @@ public class Notification {
 
 	public static class NotificationBuilder {
 		private Long id;
-		private User user;
+		private Student student;
 		private String title;
 		private String message;
 		private Boolean isRead;
 		private LocalDateTime createdAt;
 
 		public NotificationBuilder id(Long id) { this.id = id; return this; }
-		public NotificationBuilder user(User user) { this.user = user; return this; }
+		public NotificationBuilder student(Student student) { this.student = student; return this; }
 		public NotificationBuilder title(String title) { this.title = title; return this; }
 		public NotificationBuilder message(String message) { this.message = message; return this; }
 		public NotificationBuilder isRead(Boolean isRead) { this.isRead = isRead; return this; }
@@ -77,7 +77,7 @@ public class Notification {
 		public Notification build() {
             Notification obj = new Notification();
             obj.setId(id);
-            obj.setUser(user);
+            obj.setStudent(student);
             obj.setTitle(title);
             obj.setMessage(message);
             obj.setIsRead(isRead);

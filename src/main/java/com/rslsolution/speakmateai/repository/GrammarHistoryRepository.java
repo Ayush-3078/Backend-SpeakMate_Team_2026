@@ -6,13 +6,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.rslsolution.speakmateai.entity.GrammarHistory;
-import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 
 @Repository
 public interface GrammarHistoryRepository extends JpaRepository<GrammarHistory, Long> {
 
-	List<GrammarHistory> findByUser(User user);
+	List<GrammarHistory> findByStudent(Student student);
 
-	List<GrammarHistory> findByUserOrderByCreatedAtDesc(User user);
+	List<GrammarHistory> findByStudentOrderByCreatedAtDesc(Student student);
 
 }

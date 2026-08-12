@@ -14,7 +14,9 @@ import com.rslsolution.speakmateai.entity.User;
 import com.rslsolution.speakmateai.repository.NotificationRepository;
 import com.rslsolution.speakmateai.repository.ProgressRepository;
 import com.rslsolution.speakmateai.repository.SettingsRepository;
-import com.rslsolution.speakmateai.repository.UserRepository;
+import com.rslsolution.speakmateai.repository.SettingsRepository;
+import com.rslsolution.speakmateai.repository.StudentRepository;
+import com.rslsolution.speakmateai.entity.Student;
 import com.rslsolution.speakmateai.service.ExpoPushService;
 import com.rslsolution.speakmateai.service.NotificationService;
 
@@ -34,20 +36,20 @@ import com.rslsolution.speakmateai.service.NotificationService;
 @Transactional
 public class NotificationScheduler {
 
-    private final UserRepository userRepository;
+    private final StudentRepository studentRepository;
     private final ProgressRepository progressRepository;
     private final NotificationRepository notificationRepository;
     private final SettingsRepository settingsRepository;
     private final NotificationService notificationService;
     private final ExpoPushService expoPushService;
 
-    public NotificationScheduler(UserRepository userRepository,
+    public NotificationScheduler(StudentRepository studentRepository,
                                   ProgressRepository progressRepository,
                                   NotificationRepository notificationRepository,
                                   SettingsRepository settingsRepository,
                                   NotificationService notificationService,
                                   ExpoPushService expoPushService) {
-        this.userRepository = userRepository;
+        this.studentRepository = studentRepository;
         this.progressRepository = progressRepository;
         this.notificationRepository = notificationRepository;
         this.settingsRepository = settingsRepository;
@@ -77,8 +79,8 @@ public class NotificationScheduler {
 
     @Scheduled(cron = "0 0 19 * * ?")
     public void sendDailyPracticeReminder() {
-        List<User> allUsers = userRepository.findAll();
-        for (User user : allUsers) {
+        List<Student> allUsers = studentRepository.findAll();
+        for (Student user : allUsers) {
             if (!user.isActive()) continue;
 
             Settings settings = getSettingsOrDefault(user);
@@ -90,7 +92,7 @@ public class NotificationScheduler {
             // Avoid duplicating: check if a daily reminder was already sent today
             LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
             boolean alreadySent = notificationRepository
-                    .findByUserOrderByCreatedAtDesc(user)
+                    .findByStudentOrderByCreatedAtDesc(user)
                     .stream()
                     .anyMatch(n -> n.getTitle().startsWith("Daily Practice") &&
                                   n.getCreatedAt() != null &&
@@ -116,7 +118,7 @@ public class NotificationScheduler {
         List<Progress> activeStreaks = progressRepository.findByCurrentStreakGreaterThan(0);
 
         for (Progress progress : activeStreaks) {
-            User user = progress.getUser();
+            Student user = progress.getStudent();
             if (user == null || !user.isActive()) continue;
 
             Settings settings = getSettingsOrDefault(user);
@@ -127,7 +129,7 @@ public class NotificationScheduler {
             // Check if already warned today
             LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
             boolean alreadyWarned = notificationRepository
-                    .findByUserOrderByCreatedAtDesc(user)
+                    .findByStudentOrderByCreatedAtDesc(user)
                     .stream()
                     .anyMatch(n -> n.getTitle().contains("Streak") &&
                                   n.getTitle().contains("Risk") &&
@@ -154,7 +156,7 @@ public class NotificationScheduler {
     public void sendWeeklySummary() {
         List<Progress> allProgress = progressRepository.findAll();
         for (Progress progress : allProgress) {
-            User user = progress.getUser();
+            Student user = progress.getStudent();
             if (user == null || !user.isActive()) continue;
 
             Settings settings = getSettingsOrDefault(user);

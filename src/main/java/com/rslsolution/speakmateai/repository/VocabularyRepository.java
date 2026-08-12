@@ -5,16 +5,16 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 import com.rslsolution.speakmateai.entity.Vocabulary;
 
 @Repository
 public interface VocabularyRepository extends JpaRepository<Vocabulary, Long> {
 
-	List<Vocabulary> findByUser(User user);
+	List<Vocabulary> findByStudent(Student student);
 
-	List<Vocabulary> findByUserOrderByCreatedAtDesc(User user);
+	List<Vocabulary> findByStudentOrderByCreatedAtDesc(Student student);
 
-	List<Vocabulary> findByUserAndFavoriteTrue(User user);
+	List<Vocabulary> findByStudentAndFavoriteTrue(Student student);
 
 }

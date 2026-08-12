@@ -7,14 +7,14 @@ import java.util.List;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.util.StringUtils;
 
-import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 import com.rslsolution.speakmateai.enums.UserType;
 
 import jakarta.persistence.criteria.Predicate;
 
 public class SchoolUserSpecification {
 
-    public static Specification<User> filterSchoolUsers(String keyword, String standard, String division, String schoolName, 
+    public static Specification<Student> filterSchoolUsers(String keyword, String standard, String division, String schoolName, 
                                                         Boolean status, LocalDateTime registrationFrom, LocalDateTime registrationTo) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();

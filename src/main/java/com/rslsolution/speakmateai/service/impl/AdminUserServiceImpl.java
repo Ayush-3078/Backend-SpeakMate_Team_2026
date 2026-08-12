@@ -5,6 +5,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Comparator;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -13,15 +16,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.rslsolution.speakmateai.dto.request.AdminUserCreateRequest;
 import com.rslsolution.speakmateai.dto.request.AdminUserUpdateRequest;
 import com.rslsolution.speakmateai.dto.response.AdminUserResponse;
 import com.rslsolution.speakmateai.dto.response.UserStatisticsResponse;
-import java.util.stream.Collectors;
-import java.util.ArrayList;
-import java.util.Comparator;
-import org.springframework.data.domain.PageImpl;
 import com.rslsolution.speakmateai.dto.request.AdminUserDetailsUpdateRequest;
 import com.rslsolution.speakmateai.dto.response.LanguageScoreResponse;
 import com.rslsolution.speakmateai.dto.response.UserActivityResponse;
@@ -37,13 +38,12 @@ import com.rslsolution.speakmateai.entity.LessonProgress;
 import com.rslsolution.speakmateai.entity.GrammarHistory;
 import com.rslsolution.speakmateai.entity.Vocabulary;
 import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 import com.rslsolution.speakmateai.enums.Role;
 import com.rslsolution.speakmateai.mapper.AdminUserMapper;
 import com.rslsolution.speakmateai.repository.UserRepository;
 import com.rslsolution.speakmateai.repository.UserSpecification;
 import com.rslsolution.speakmateai.service.AdminUserService;
-
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
 @Transactional
@@ -83,6 +83,8 @@ public class AdminUserServiceImpl implements AdminUserService {
             throw new IllegalArgumentException("User with this email already exists");
         }
         
+        // Creating a standard user for now (or a Student if we need to).
+        // Since AdminUserCreateRequest is generic, we just create User.
         User user = new User();
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
@@ -155,8 +157,6 @@ public class AdminUserServiceImpl implements AdminUserService {
     public void deleteUser(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + id));
-        // Physically delete. Due to cascade ALL & orphanRemoval in User entity, 
-        // all child progress, sessions, and histories will be safely deleted.
         userRepository.delete(user);
     }
 
@@ -227,8 +227,11 @@ public class AdminUserServiceImpl implements AdminUserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
                 
-        Progress progress = user.getProgressList() != null && !user.getProgressList().isEmpty() 
-            ? user.getProgressList().get(0) : null;
+        Progress progress = null;
+        if (user instanceof Student student) {
+            progress = student.getProgressList() != null && !student.getProgressList().isEmpty() 
+                ? student.getProgressList().get(0) : null;
+        }
             
         return UserDetailsResponse.builder()
             .id(user.getId())
@@ -251,20 +254,31 @@ public class AdminUserServiceImpl implements AdminUserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
                 
-        Progress progress = user.getProgressList() != null && !user.getProgressList().isEmpty() 
-            ? user.getProgressList().get(0) : null;
-            
-        int totalSpeaking = user.getSpeakingSessions() != null ? user.getSpeakingSessions().size() : 0;
-        int aiChats = user.getChatSessions() != null ? user.getChatSessions().size() : 0;
-        
+        int totalSpeaking = 0;
+        int aiChats = 0;
         int completedLessons = 0;
-        if (user.getLessonProgresses() != null) {
-            completedLessons = (int) user.getLessonProgresses().stream().filter(lp -> lp.getCompleted() != null && lp.getCompleted()).count();
-        }
-        
         double practiceHours = 0;
-        if (progress != null && progress.getTotalPracticeMinutes() != null) {
-            practiceHours = progress.getTotalPracticeMinutes() / 60.0;
+        int currentStreak = 0;
+        int xp = 0;
+
+        if (user instanceof Student student) {
+            Progress progress = student.getProgressList() != null && !student.getProgressList().isEmpty() 
+                ? student.getProgressList().get(0) : null;
+                
+            totalSpeaking = student.getSpeakingSessions() != null ? student.getSpeakingSessions().size() : 0;
+            aiChats = student.getChatSessions() != null ? student.getChatSessions().size() : 0;
+            
+            if (student.getLessonProgresses() != null) {
+                completedLessons = (int) student.getLessonProgresses().stream().filter(lp -> lp.getCompleted() != null && lp.getCompleted()).count();
+            }
+            
+            if (progress != null) {
+                if (progress.getTotalPracticeMinutes() != null) {
+                    practiceHours = progress.getTotalPracticeMinutes() / 60.0;
+                }
+                currentStreak = progress.getCurrentStreak() != null ? progress.getCurrentStreak() : 0;
+                xp = progress.getXp() != null ? progress.getXp() : 0;
+            }
         }
 
         return UserLearningStatisticsResponse.builder()
@@ -272,8 +286,8 @@ public class AdminUserServiceImpl implements AdminUserService {
             .speakingSessions(totalSpeaking)
             .aiChats(aiChats)
             .completedLessons(completedLessons)
-            .currentStreak(progress != null && progress.getCurrentStreak() != null ? progress.getCurrentStreak() : 0)
-            .xp(progress != null && progress.getXp() != null ? progress.getXp() : 0)
+            .currentStreak(currentStreak)
+            .xp(xp)
             .build();
     }
 
@@ -283,27 +297,28 @@ public class AdminUserServiceImpl implements AdminUserService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
         
         double avgGrammar = 0;
-        if (user.getGrammarHistories() != null && !user.getGrammarHistories().isEmpty()) {
-            avgGrammar = user.getGrammarHistories().stream()
-                .filter(g -> g.getGrammarScore() != null)
-                .mapToDouble(GrammarHistory::getGrammarScore)
-                .average().orElse(0.0);
-        }
-        
-        // Vocabulary doesn't have a score in the entity, so we just return 0.0
-        double avgVocabulary = 0.0;
-        
         double avgFluency = 0;
         double avgPronunciation = 0;
-        if (user.getSpeakingSessions() != null && !user.getSpeakingSessions().isEmpty()) {
-            avgFluency = user.getSpeakingSessions().stream()
-                .filter(s -> s.getFluencyScore() != null)
-                .mapToDouble(SpeakingSession::getFluencyScore)
-                .average().orElse(0.0);
-            avgPronunciation = user.getSpeakingSessions().stream()
-                .filter(s -> s.getPronunciationScore() != null)
-                .mapToDouble(SpeakingSession::getPronunciationScore)
-                .average().orElse(0.0);
+        double avgVocabulary = 0.0;
+
+        if (user instanceof Student student) {
+            if (student.getGrammarHistories() != null && !student.getGrammarHistories().isEmpty()) {
+                avgGrammar = student.getGrammarHistories().stream()
+                    .filter(g -> g.getGrammarScore() != null)
+                    .mapToDouble(GrammarHistory::getGrammarScore)
+                    .average().orElse(0.0);
+            }
+            
+            if (student.getSpeakingSessions() != null && !student.getSpeakingSessions().isEmpty()) {
+                avgFluency = student.getSpeakingSessions().stream()
+                    .filter(s -> s.getFluencyScore() != null)
+                    .mapToDouble(SpeakingSession::getFluencyScore)
+                    .average().orElse(0.0);
+                avgPronunciation = student.getSpeakingSessions().stream()
+                    .filter(s -> s.getPronunciationScore() != null)
+                    .mapToDouble(SpeakingSession::getPronunciationScore)
+                    .average().orElse(0.0);
+            }
         }
 
         return LanguageScoreResponse.builder()
@@ -321,27 +336,29 @@ public class AdminUserServiceImpl implements AdminUserService {
                 
         List<UserActivityResponse> allActivities = new ArrayList<>();
         
-        if (user.getLessonProgresses() != null) {
-            for (LessonProgress lp : user.getLessonProgresses()) {
-                allActivities.add(UserActivityResponse.builder()
-                    .activityType("LESSON")
-                    .title(lp.getLesson() != null ? lp.getLesson().getTitle() : "Unknown Lesson")
-                    .description("Lesson Practice")
-                    .activityDate(lp.getUpdatedAt() != null ? lp.getUpdatedAt() : lp.getCreatedAt())
-                    .status(lp.getCompleted() != null && lp.getCompleted() ? "COMPLETED" : "IN_PROGRESS")
-                    .build());
+        if (user instanceof Student student) {
+            if (student.getLessonProgresses() != null) {
+                for (LessonProgress lp : student.getLessonProgresses()) {
+                    allActivities.add(UserActivityResponse.builder()
+                        .activityType("LESSON")
+                        .title(lp.getLesson() != null ? lp.getLesson().getTitle() : "Unknown Lesson")
+                        .description("Lesson Practice")
+                        .activityDate(lp.getUpdatedAt() != null ? lp.getUpdatedAt() : lp.getCreatedAt())
+                        .status(lp.getCompleted() != null && lp.getCompleted() ? "COMPLETED" : "IN_PROGRESS")
+                        .build());
+                }
             }
-        }
-        
-        if (user.getSpeakingSessions() != null) {
-            for (SpeakingSession ss : user.getSpeakingSessions()) {
-                allActivities.add(UserActivityResponse.builder()
-                    .activityType("SPEAKING")
-                    .title(ss.getTopic())
-                    .description("Speaking Practice")
-                    .activityDate(ss.getCreatedAt())
-                    .status("COMPLETED")
-                    .build());
+            
+            if (student.getSpeakingSessions() != null) {
+                for (SpeakingSession ss : student.getSpeakingSessions()) {
+                    allActivities.add(UserActivityResponse.builder()
+                        .activityType("SPEAKING")
+                        .title(ss.getTopic())
+                        .description("Speaking Practice")
+                        .activityDate(ss.getCreatedAt())
+                        .status("COMPLETED")
+                        .build());
+                }
             }
         }
         
@@ -361,15 +378,19 @@ public class AdminUserServiceImpl implements AdminUserService {
         int lessonsCompleted = 0;
         int testsCompleted = 0;
         double completionPercent = 0.0;
-        if (user.getLessonProgresses() != null && !user.getLessonProgresses().isEmpty()) {
-            lessonsCompleted = (int) user.getLessonProgresses().stream().filter(lp -> lp.getCompleted() != null && lp.getCompleted()).count();
-            completionPercent = user.getLessonProgresses().stream().filter(lp -> lp.getProgressPercent() != null).mapToDouble(LessonProgress::getProgressPercent).average().orElse(0.0);
-        }
-        
-        Progress progress = user.getProgressList() != null && !user.getProgressList().isEmpty() 
-            ? user.getProgressList().get(0) : null;
+        int totalLearningHours = 0;
+
+        if (user instanceof Student student) {
+            if (student.getLessonProgresses() != null && !student.getLessonProgresses().isEmpty()) {
+                lessonsCompleted = (int) student.getLessonProgresses().stream().filter(lp -> lp.getCompleted() != null && lp.getCompleted()).count();
+                completionPercent = student.getLessonProgresses().stream().filter(lp -> lp.getProgressPercent() != null).mapToDouble(LessonProgress::getProgressPercent).average().orElse(0.0);
+            }
             
-        int totalLearningHours = progress != null && progress.getTotalPracticeMinutes() != null ? progress.getTotalPracticeMinutes() / 60 : 0;
+            Progress progress = student.getProgressList() != null && !student.getProgressList().isEmpty() 
+                ? student.getProgressList().get(0) : null;
+                
+            totalLearningHours = progress != null && progress.getTotalPracticeMinutes() != null ? progress.getTotalPracticeMinutes() / 60 : 0;
+        }
 
         return UserProgressResponse.builder()
             .overallProgress((int) completionPercent)
@@ -392,12 +413,14 @@ public class AdminUserServiceImpl implements AdminUserService {
         LocalDateTime lastDate = null;
         double bestScore = 0.0;
         
-        if (user.getSpeakingSessions() != null && !user.getSpeakingSessions().isEmpty()) {
-            totalSessions = user.getSpeakingSessions().size();
-            avgScore = user.getSpeakingSessions().stream().filter(s -> s.getScore() != null).mapToDouble(SpeakingSession::getScore).average().orElse(0.0);
-            bestScore = user.getSpeakingSessions().stream().filter(s -> s.getScore() != null).mapToDouble(SpeakingSession::getScore).max().orElse(0.0);
-            totalMinutes = user.getSpeakingSessions().stream().filter(s -> s.getDuration() != null).mapToInt(SpeakingSession::getDuration).sum() / 60;
-            lastDate = user.getSpeakingSessions().stream().map(SpeakingSession::getCreatedAt).max(LocalDateTime::compareTo).orElse(null);
+        if (user instanceof Student student) {
+            if (student.getSpeakingSessions() != null && !student.getSpeakingSessions().isEmpty()) {
+                totalSessions = student.getSpeakingSessions().size();
+                avgScore = student.getSpeakingSessions().stream().filter(s -> s.getScore() != null).mapToDouble(SpeakingSession::getScore).average().orElse(0.0);
+                bestScore = student.getSpeakingSessions().stream().filter(s -> s.getScore() != null).mapToDouble(SpeakingSession::getScore).max().orElse(0.0);
+                totalMinutes = student.getSpeakingSessions().stream().filter(s -> s.getDuration() != null).mapToInt(SpeakingSession::getDuration).sum() / 60;
+                lastDate = student.getSpeakingSessions().stream().map(SpeakingSession::getCreatedAt).max(LocalDateTime::compareTo).orElse(null);
+            }
         }
 
         return UserSpeakingResponse.builder()
@@ -418,10 +441,12 @@ public class AdminUserServiceImpl implements AdminUserService {
         double accuracy = 0.0;
         int totalMistakes = 0; // mistakesCount does not exist
         
-        if (user.getGrammarHistories() != null && !user.getGrammarHistories().isEmpty()) {
-            exercises = user.getGrammarHistories().size();
-            accuracy = user.getGrammarHistories().stream().filter(g -> g.getGrammarScore() != null).mapToDouble(GrammarHistory::getGrammarScore).average().orElse(0.0);
-            totalMistakes = 0; // Not available in DB model
+        if (user instanceof Student student) {
+            if (student.getGrammarHistories() != null && !student.getGrammarHistories().isEmpty()) {
+                exercises = student.getGrammarHistories().size();
+                accuracy = student.getGrammarHistories().stream().filter(g -> g.getGrammarScore() != null).mapToDouble(GrammarHistory::getGrammarScore).average().orElse(0.0);
+                totalMistakes = 0; // Not available in DB model
+            }
         }
 
         return UserGrammarResponse.builder()
@@ -438,15 +463,17 @@ public class AdminUserServiceImpl implements AdminUserService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
                 
         int wordsLearned = 0;
-        int mastered = 0; // status does not exist, use favorite as proxy or 0
+        int mastered = 0;
         int pending = 0;
-        double score = 0.0; // score does not exist
+        double score = 0.0;
         
-        if (user.getVocabularyList() != null && !user.getVocabularyList().isEmpty()) {
-            wordsLearned = user.getVocabularyList().size();
-            mastered = (int) user.getVocabularyList().stream().filter(v -> Boolean.TRUE.equals(v.getFavorite())).count();
-            pending = wordsLearned - mastered;
-            score = 0.0;
+        if (user instanceof Student student) {
+            if (student.getVocabularyList() != null && !student.getVocabularyList().isEmpty()) {
+                wordsLearned = student.getVocabularyList().size();
+                mastered = (int) student.getVocabularyList().stream().filter(v -> Boolean.TRUE.equals(v.getFavorite())).count();
+                pending = wordsLearned - mastered;
+                score = 0.0;
+            }
         }
 
         return UserVocabularyResponse.builder()
@@ -473,4 +500,3 @@ public class AdminUserServiceImpl implements AdminUserService {
         return getUserDetails(userId);
     }
 }
-

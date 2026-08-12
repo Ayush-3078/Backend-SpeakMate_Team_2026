@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import com.rslsolution.speakmateai.enums.Role;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -24,4 +26,6 @@ public class AdminRegisterRequest {
     private String password;
 
     private String phone;
+    
+    private Role role;
 }

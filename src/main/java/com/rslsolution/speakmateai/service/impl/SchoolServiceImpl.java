@@ -4,9 +4,11 @@ import com.rslsolution.speakmateai.dto.request.SchoolRequest;
 import com.rslsolution.speakmateai.dto.response.SchoolResponse;
 import com.rslsolution.speakmateai.entity.School;
 import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.SchoolAdmin;
 import com.rslsolution.speakmateai.enums.Role;
 import com.rslsolution.speakmateai.enums.Status;
 import com.rslsolution.speakmateai.repository.SchoolRepository;
+import com.rslsolution.speakmateai.repository.SchoolAdminRepository;
 import com.rslsolution.speakmateai.repository.UserRepository;
 import com.rslsolution.speakmateai.service.EmailService;
 import com.rslsolution.speakmateai.service.SchoolService;
@@ -26,6 +28,7 @@ public class SchoolServiceImpl implements SchoolService {
 
     private final SchoolRepository schoolRepository;
     private final UserRepository userRepository;
+    private final SchoolAdminRepository schoolAdminRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
 
@@ -56,7 +59,7 @@ public class SchoolServiceImpl implements SchoolService {
 
         // 2. Create School Admin
         String verificationToken = UUID.randomUUID().toString();
-        User adminUser = User.builder()
+        SchoolAdmin adminUser = SchoolAdmin.builder()
                 .firstName(request.getAdminFirstName())
                 .lastName(request.getAdminLastName())
                 .email(request.getAdminEmail())
@@ -68,7 +71,7 @@ public class SchoolServiceImpl implements SchoolService {
                 .emailVerified(false)
                 .emailVerificationToken(verificationToken)
                 .build();
-        adminUser = userRepository.save(adminUser);
+        adminUser = schoolAdminRepository.save(adminUser);
 
         // 3. Send Verification Email
         String verifyLink = frontendUrl + "/verify-email?token=" + verificationToken;

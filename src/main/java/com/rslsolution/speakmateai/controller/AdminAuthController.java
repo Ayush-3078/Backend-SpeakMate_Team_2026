@@ -22,7 +22,7 @@ import com.rslsolution.speakmateai.service.AdminAuthService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/v1/auth/admin")
+@RequestMapping("/api/auth/admin")
 @CrossOrigin(origins = "*")
 public class AdminAuthController {
 

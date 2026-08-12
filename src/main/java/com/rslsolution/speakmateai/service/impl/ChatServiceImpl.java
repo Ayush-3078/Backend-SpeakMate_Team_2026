@@ -10,11 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.rslsolution.speakmateai.dto.request.ChatRequest;
 import com.rslsolution.speakmateai.dto.response.ChatResponse;
 import com.rslsolution.speakmateai.entity.ChatHistory;
-import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 import com.rslsolution.speakmateai.exception.ChatNotFoundException;
 import com.rslsolution.speakmateai.exception.UserNotFoundException;
 import com.rslsolution.speakmateai.repository.ChatHistoryRepository;
-import com.rslsolution.speakmateai.repository.UserRepository;
+import com.rslsolution.speakmateai.repository.StudentRepository;
 import com.rslsolution.speakmateai.service.ChatService;
 
 @Service
@@ -22,11 +22,11 @@ import com.rslsolution.speakmateai.service.ChatService;
 public class ChatServiceImpl implements ChatService {
 
 	private final ChatHistoryRepository chatHistoryRepository;
-	private final UserRepository userRepository;
+	private final StudentRepository studentRepository;
 
-	public ChatServiceImpl(ChatHistoryRepository chatHistoryRepository, UserRepository userRepository) {
+	public ChatServiceImpl(ChatHistoryRepository chatHistoryRepository, StudentRepository studentRepository) {
 		this.chatHistoryRepository = chatHistoryRepository;
-		this.userRepository = userRepository;
+		this.studentRepository = studentRepository;
 	}
 
 	@Override
@@ -36,11 +36,11 @@ public class ChatServiceImpl implements ChatService {
 
 		String email = authentication.getName();
 
-		User user = userRepository.findByEmail(email).orElseThrow(() -> new UserNotFoundException("User not found"));
+		Student user = studentRepository.findByEmail(email).orElseThrow(() -> new UserNotFoundException("Student not found"));
 
 		String aiResponse = "AI integration will be implemented in the next phase.";
 
-		ChatHistory chat = ChatHistory.builder().user(user).userMessage(request.getMessage()).aiResponse(aiResponse)
+		ChatHistory chat = ChatHistory.builder().student(user).userMessage(request.getMessage()).aiResponse(aiResponse)
 				.conversationId(request.getConversationId()).build();
 
 		ChatHistory savedChat = chatHistoryRepository.save(chat);
@@ -55,10 +55,10 @@ public class ChatServiceImpl implements ChatService {
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
 
-		return chatHistoryRepository.findByUserOrderByCreatedAtAsc(user).stream()
+		return chatHistoryRepository.findByStudentOrderByCreatedAtAsc(user).stream()
 				.map(chat -> ChatResponse.builder().id(chat.getId()).userMessage(chat.getUserMessage())
 						.aiResponse(chat.getAiResponse()).conversationId(chat.getConversationId())
 						.createdAt(chat.getCreatedAt()).build())

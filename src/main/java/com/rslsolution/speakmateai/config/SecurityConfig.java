@@ -6,6 +6,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -24,6 +25,7 @@ import com.rslsolution.speakmateai.security.RequestLoggingFilter;
 import java.util.List;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
 	private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -44,14 +46,18 @@ public class SecurityConfig {
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
 						// Admin Auth
-						.requestMatchers("/api/admin/auth/register", "/api/v1/auth/admin/login",
-								"/api/v1/auth/admin/forgot-password", "/api/v1/auth/admin/verify-otp",
-								"/api/v1/auth/admin/reset-password", "/api/v1/auth/admin/refresh-token")
+						.requestMatchers("/api/auth/admin/register", "/api/auth/admin/login",
+								"/api/auth/admin/forgot-password", "/api/auth/admin/verify-otp",
+								"/api/auth/admin/reset-password", "/api/auth/admin/refresh-token")
 						.permitAll()
-						.requestMatchers("/api/v1/admin/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_ADMIN")
-						// Auth endpoints
+						.requestMatchers("/api/admin/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_ADMIN")
+						
+						// School Portal Auth and Features
+						.requestMatchers("/api/auth/**").permitAll()
+						.requestMatchers("/api/school/**").hasAnyAuthority("ROLE_SCHOOL_ADMIN", "ROLE_TEACHER")
+
+						// Auth endpoints for Students
 						.requestMatchers(
-								"/api/v1/auth/login",
 								"/api/users/register", "/api/users/login",
 								"/api/users/google-login", "/api/users/send-registration-otp",
 								"/api/users/send-delete-account-otp", "/api/users/delete-account",
@@ -59,6 +65,7 @@ public class SecurityConfig {
 								"/api/users/reset-password", "/api/users/reset-redirect",
 								"/api/users/register-expo-url", "/error")
 						.permitAll()
+
 						// Lesson read endpoints — public browse (progress/start/complete require JWT)
 						.requestMatchers(HttpMethod.GET,
 								"/api/lessons", "/api/lessons/categories",
@@ -67,6 +74,15 @@ public class SecurityConfig {
 								"/api/lesson/get-all-lessons", "/api/lesson/get-active-lessons",
 								"/api/lesson/get-lesson/*")
 						.permitAll()
+						
+						// Student app features (also accessible by Teachers)
+						.requestMatchers("/api/users/**", "/api/lessons/**", "/api/lesson/**", "/api/speech/**", 
+								"/api/speaking/**", "/api/progress/**", "/api/achievement/**", 
+								"/api/vocabulary/**", "/api/grammar/**", "/api/chat/**", "/api/chat-legacy/**", 
+								"/api/ai/**", "/api/settings/**", "/api/onboarding/**", "/api/profile/**", 
+								"/api/notification/**", "/api/user/**")
+						.hasAnyAuthority("ROLE_USER", "ROLE_TEACHER")
+						
 						.anyRequest().authenticated())
 				.httpBasic(Customizer.withDefaults());
 

@@ -4,7 +4,7 @@ import java.util.List;
 
 import com.rslsolution.speakmateai.dto.request.NotificationRequest;
 import com.rslsolution.speakmateai.dto.response.NotificationResponse;
-import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 
 public interface NotificationService {
 
@@ -22,7 +22,7 @@ public interface NotificationService {
 
 	void deleteNotificationById(Long id);
 
-	NotificationResponse createSystemNotification(User user, String title, String message);
+	NotificationResponse createSystemNotification(Student user, String title, String message);
 
 	void clearAllNotifications();
 

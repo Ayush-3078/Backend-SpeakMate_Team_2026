@@ -10,11 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.rslsolution.speakmateai.dto.request.NotificationRequest;
 import com.rslsolution.speakmateai.dto.response.NotificationResponse;
 import com.rslsolution.speakmateai.entity.Notification;
-import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 import com.rslsolution.speakmateai.exception.NotificationNotFoundException;
 import com.rslsolution.speakmateai.exception.UserNotFoundException;
 import com.rslsolution.speakmateai.repository.NotificationRepository;
-import com.rslsolution.speakmateai.repository.UserRepository;
+import com.rslsolution.speakmateai.repository.StudentRepository;
 import com.rslsolution.speakmateai.service.NotificationService;
 
 @Service
@@ -22,11 +22,11 @@ import com.rslsolution.speakmateai.service.NotificationService;
 public class NotificationServiceImpl implements NotificationService {
 
 	private final NotificationRepository notificationRepository;
-	private final UserRepository userRepository;
+	private final StudentRepository studentRepository;
 
-	public NotificationServiceImpl(NotificationRepository notificationRepository, UserRepository userRepository) {
+	public NotificationServiceImpl(NotificationRepository notificationRepository, StudentRepository studentRepository) {
 		this.notificationRepository = notificationRepository;
-		this.userRepository = userRepository;
+		this.studentRepository = studentRepository;
 	}
 
 	@Override
@@ -34,10 +34,10 @@ public class NotificationServiceImpl implements NotificationService {
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
 
-		Notification notification = Notification.builder().user(user).title(request.getTitle())
+		Notification notification = Notification.builder().student(user).title(request.getTitle())
 				.message(request.getMessage()).isRead(request.getIsRead()).build();
 
 		Notification savedNotification = notificationRepository.save(notification);
@@ -52,20 +52,20 @@ public class NotificationServiceImpl implements NotificationService {
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
 
-		List<Notification> notifications = notificationRepository.findByUserOrderByCreatedAtDesc(user);
+		List<Notification> notifications = notificationRepository.findByStudentOrderByCreatedAtDesc(user);
 
 		if (notifications.isEmpty()) {
 			List<Notification> sampleList = List.of(
-				Notification.builder().user(user).title("Welcome to SpeakMateAI!").message("Start your journey today by completing your first speaking session.").isRead(false).build(),
-				Notification.builder().user(user).title("Keep the Streak Alive").message("Don't forget to practice today to maintain your learning streak!").isRead(false).build(),
-				Notification.builder().user(user).title("Vocabulary Reminder").message("Review your saved vocabulary words using the Flashcard module.").isRead(false).build()
+				Notification.builder().student(user).title("Welcome to SpeakMateAI!").message("Start your journey today by completing your first speaking session.").isRead(false).build(),
+				Notification.builder().student(user).title("Keep the Streak Alive").message("Don't forget to practice today to maintain your learning streak!").isRead(false).build(),
+				Notification.builder().student(user).title("Vocabulary Reminder").message("Review your saved vocabulary words using the Flashcard module.").isRead(false).build()
 			);
 			notifications = notificationRepository.saveAll(sampleList);
 			// Re-fetch sorted by creation date
-			notifications = notificationRepository.findByUserOrderByCreatedAtDesc(user);
+			notifications = notificationRepository.findByStudentOrderByCreatedAtDesc(user);
 		}
 
 		return notifications.stream()
@@ -91,17 +91,17 @@ public class NotificationServiceImpl implements NotificationService {
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
 
-		List<Notification> unread = notificationRepository.findByUserAndIsReadFalse(user);
+		List<Notification> unread = notificationRepository.findByStudentAndIsReadFalse(user);
 		
 		if (unread.isEmpty()) {
 			// Trigger seeding if all are empty (both read and unread)
-			List<Notification> all = notificationRepository.findByUser(user);
+			List<Notification> all = notificationRepository.findByStudent(user);
 			if (all.isEmpty()) {
 				getAllNotifications(); // This will trigger seeding
-				unread = notificationRepository.findByUserAndIsReadFalse(user);
+				unread = notificationRepository.findByStudentAndIsReadFalse(user);
 			}
 		}
 
@@ -130,9 +130,9 @@ public class NotificationServiceImpl implements NotificationService {
 	@Override
 	public void markAllRead() {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
-		List<Notification> unread = notificationRepository.findByUserAndIsReadFalse(user);
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
+		List<Notification> unread = notificationRepository.findByStudentAndIsReadFalse(user);
 		unread.forEach(n -> n.setIsRead(true));
 		notificationRepository.saveAll(unread);
 	}
@@ -149,9 +149,9 @@ public class NotificationServiceImpl implements NotificationService {
 	// ── System-triggered helper ─────────────────────────────────────────
 
 	@Override
-	public NotificationResponse createSystemNotification(User user, String title, String message) {
+	public NotificationResponse createSystemNotification(Student user, String title, String message) {
 		Notification notification = Notification.builder()
-				.user(user)
+				.student(user)
 				.title(title)
 				.message(message)
 				.isRead(false)
@@ -169,17 +169,17 @@ public class NotificationServiceImpl implements NotificationService {
 	@Override
 	public void clearAllNotifications() {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
-		List<Notification> all = notificationRepository.findByUser(user);
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
+		List<Notification> all = notificationRepository.findByStudent(user);
 		notificationRepository.deleteAll(all);
 	}
 
 	@Override
 	public long countUnread() {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
-		return notificationRepository.countByUserAndIsReadFalse(user);
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
+		return notificationRepository.countByStudentAndIsReadFalse(user);
 	}
 }

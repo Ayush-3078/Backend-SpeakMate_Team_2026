@@ -6,17 +6,17 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.rslsolution.speakmateai.entity.Notification;
-import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
-	List<Notification> findByUser(User user);
+	List<Notification> findByStudent(Student student);
 
-	List<Notification> findByUserOrderByCreatedAtDesc(User user);
+	List<Notification> findByStudentOrderByCreatedAtDesc(Student student);
 
-	List<Notification> findByUserAndIsReadFalse(User user);
+	List<Notification> findByStudentAndIsReadFalse(Student student);
 
-	long countByUserAndIsReadFalse(User user);
+	long countByStudentAndIsReadFalse(Student student);
 
 }

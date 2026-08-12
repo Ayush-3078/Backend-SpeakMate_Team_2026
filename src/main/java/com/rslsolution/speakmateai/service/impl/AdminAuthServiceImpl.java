@@ -58,7 +58,7 @@ public class AdminAuthServiceImpl implements AdminAuthService {
 				.email(request.getEmail())
 				.password(passwordEncoder.encode(request.getPassword()))
 				.phone(request.getPhone())
-				.role(Role.ADMIN)
+				.role(request.getRole() != null ? request.getRole() : Role.ADMIN)
 				.status(AdminStatus.ACTIVE)
 				.build();
 

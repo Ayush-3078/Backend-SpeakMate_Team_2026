@@ -10,11 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.rslsolution.speakmateai.dto.request.GrammarRequest;
 import com.rslsolution.speakmateai.dto.response.GrammarResponse;
 import com.rslsolution.speakmateai.entity.GrammarHistory;
-import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 import com.rslsolution.speakmateai.exception.GrammarNotFoundException;
 import com.rslsolution.speakmateai.exception.UserNotFoundException;
 import com.rslsolution.speakmateai.repository.GrammarHistoryRepository;
-import com.rslsolution.speakmateai.repository.UserRepository;
+import com.rslsolution.speakmateai.repository.StudentRepository;
 import com.rslsolution.speakmateai.service.GrammarService;
 
 @Service
@@ -22,16 +22,16 @@ import com.rslsolution.speakmateai.service.GrammarService;
 public class GrammarServiceImpl implements GrammarService {
 
 	private final GrammarHistoryRepository grammarHistoryRepository;
-	private final UserRepository userRepository;
+	private final StudentRepository studentRepository;
 	private final com.rslsolution.speakmateai.repository.ProgressRepository progressRepository;
 	private final com.rslsolution.speakmateai.service.AiService aiService;
 	private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
-	public GrammarServiceImpl(GrammarHistoryRepository grammarHistoryRepository, UserRepository userRepository,
+	public GrammarServiceImpl(GrammarHistoryRepository grammarHistoryRepository, StudentRepository studentRepository,
 			com.rslsolution.speakmateai.repository.ProgressRepository progressRepository,
 			com.rslsolution.speakmateai.service.AiService aiService, com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
 		this.grammarHistoryRepository = grammarHistoryRepository;
-		this.userRepository = userRepository;
+		this.studentRepository = studentRepository;
 		this.progressRepository = progressRepository;
 		this.aiService = aiService;
 		this.objectMapper = objectMapper;
@@ -52,8 +52,8 @@ public class GrammarServiceImpl implements GrammarService {
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
 
 		String originalText = request.getOriginalText();
 		String correctedText = originalText;
@@ -100,15 +100,15 @@ public class GrammarServiceImpl implements GrammarService {
 			grammarScore = 90.0;
 		}
 
-		GrammarHistory grammarHistory = GrammarHistory.builder().user(user).originalText(originalText)
+		GrammarHistory grammarHistory = GrammarHistory.builder().student(user).originalText(originalText)
 				.correctedText(correctedText).explanation(explanation).grammarScore(grammarScore).build();
 
 		GrammarHistory savedGrammar = grammarHistoryRepository.save(grammarHistory);
 
 		// Increment Grammar progress count
 		try {
-			com.rslsolution.speakmateai.entity.Progress progress = progressRepository.findByUser(user)
-					.orElseGet(() -> com.rslsolution.speakmateai.entity.Progress.builder().user(user).xp(0).level(1).currentStreak(0).longestStreak(0).totalPracticeMinutes(0).totalSpeakingSessions(0).totalGrammarChecks(0).totalVocabularyWords(0).build());
+			com.rslsolution.speakmateai.entity.Progress progress = progressRepository.findByStudent(user)
+					.orElseGet(() -> com.rslsolution.speakmateai.entity.Progress.builder().student(user).xp(0).level(1).currentStreak(0).longestStreak(0).totalPracticeMinutes(0).totalSpeakingSessions(0).totalGrammarChecks(0).totalVocabularyWords(0).build());
 			progress.setTotalGrammarChecks((progress.getTotalGrammarChecks() == null ? 0 : progress.getTotalGrammarChecks()) + 1);
 			int newXp = (progress.getXp() == null ? 0 : progress.getXp()) + 15;
 			progress.setXp(newXp);
@@ -128,10 +128,10 @@ public class GrammarServiceImpl implements GrammarService {
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
 
-		return grammarHistoryRepository.findByUserOrderByCreatedAtDesc(user).stream()
+		return grammarHistoryRepository.findByStudentOrderByCreatedAtDesc(user).stream()
 				.map(grammar -> GrammarResponse.builder().id(grammar.getId()).originalText(grammar.getOriginalText())
 						.correctedText(grammar.getCorrectedText()).explanation(grammar.getExplanation())
 						.grammarScore(grammar.getGrammarScore()).createdAt(grammar.getCreatedAt()).build())

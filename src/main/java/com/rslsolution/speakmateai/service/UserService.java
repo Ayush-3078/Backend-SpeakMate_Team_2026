@@ -24,7 +24,13 @@ public interface UserService {
 
 	UserResponse register(RegisterRequest request);
 
-	AuthResponse login(LoginRequest request);
+	AuthResponse loginSchoolAdmin(LoginRequest request);
+
+	AuthResponse loginTeacher(LoginRequest request);
+
+	AuthResponse loginStudent(LoginRequest request);
+
+	AuthResponse loginUser(LoginRequest request);
 
 	UserResponse getCurrentUser();
 

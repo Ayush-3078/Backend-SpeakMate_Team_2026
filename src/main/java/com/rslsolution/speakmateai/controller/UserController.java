@@ -61,7 +61,7 @@ public class UserController {
 
 	@PostMapping("/login")
 	public AuthResponse login(@Valid @RequestBody LoginRequest request) {
-		return userService.login(request);
+		return userService.loginUser(request);
 	}
 
 	@PostMapping("/forgot-password")

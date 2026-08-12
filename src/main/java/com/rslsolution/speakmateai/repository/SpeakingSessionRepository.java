@@ -6,13 +6,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.rslsolution.speakmateai.entity.SpeakingSession;
-import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 
 @Repository
 public interface SpeakingSessionRepository extends JpaRepository<SpeakingSession, Long> {
 
-	List<SpeakingSession> findByUser(User user);
+	List<SpeakingSession> findByStudent(Student student);
 
-	List<SpeakingSession> findByUserOrderByCreatedAtDesc(User user);
+	List<SpeakingSession> findByStudentOrderByCreatedAtDesc(Student student);
 
 }

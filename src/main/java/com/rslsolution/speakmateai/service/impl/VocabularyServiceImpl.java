@@ -9,11 +9,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.rslsolution.speakmateai.dto.request.VocabularyRequest;
 import com.rslsolution.speakmateai.dto.response.VocabularyResponse;
-import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 import com.rslsolution.speakmateai.entity.Vocabulary;
 import com.rslsolution.speakmateai.exception.UserNotFoundException;
 import com.rslsolution.speakmateai.exception.VocabularyNotFoundException;
-import com.rslsolution.speakmateai.repository.UserRepository;
+import com.rslsolution.speakmateai.repository.StudentRepository;
 import com.rslsolution.speakmateai.repository.VocabularyRepository;
 import com.rslsolution.speakmateai.service.VocabularyService;
 
@@ -22,16 +22,16 @@ import com.rslsolution.speakmateai.service.VocabularyService;
 public class VocabularyServiceImpl implements VocabularyService {
 
 	private final VocabularyRepository vocabularyRepository;
-	private final UserRepository userRepository;
+	private final StudentRepository studentRepository;
 	private final com.rslsolution.speakmateai.repository.ProgressRepository progressRepository;
 	private final com.rslsolution.speakmateai.service.AiService aiService;
 	private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
-	public VocabularyServiceImpl(VocabularyRepository vocabularyRepository, UserRepository userRepository,
+	public VocabularyServiceImpl(VocabularyRepository vocabularyRepository, StudentRepository studentRepository,
 			com.rslsolution.speakmateai.repository.ProgressRepository progressRepository,
 			com.rslsolution.speakmateai.service.AiService aiService, com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
 		this.vocabularyRepository = vocabularyRepository;
-		this.userRepository = userRepository;
+		this.studentRepository = studentRepository;
 		this.progressRepository = progressRepository;
 		this.aiService = aiService;
 		this.objectMapper = objectMapper;
@@ -52,8 +52,8 @@ public class VocabularyServiceImpl implements VocabularyService {
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
 
 		String word = request.getWord();
 		String meaning = "Meaning of " + word + ".";
@@ -88,15 +88,15 @@ public class VocabularyServiceImpl implements VocabularyService {
 			exampleSentence = "This is a sentence using " + word + ".";
 		}
 
-		Vocabulary vocabulary = Vocabulary.builder().user(user).word(word).meaning(meaning)
+		Vocabulary vocabulary = Vocabulary.builder().student(user).word(word).meaning(meaning)
 				.exampleSentence(exampleSentence).synonym(synonym).antonym(antonym).favorite(false).build();
 
 		Vocabulary savedVocabulary = vocabularyRepository.save(vocabulary);
 
 		// Increment Vocabulary progress count
 		try {
-			com.rslsolution.speakmateai.entity.Progress progress = progressRepository.findByUser(user)
-					.orElseGet(() -> com.rslsolution.speakmateai.entity.Progress.builder().user(user).xp(0).level(1).currentStreak(0).longestStreak(0).totalPracticeMinutes(0).totalSpeakingSessions(0).totalGrammarChecks(0).totalVocabularyWords(0).build());
+			com.rslsolution.speakmateai.entity.Progress progress = progressRepository.findByStudent(user)
+					.orElseGet(() -> com.rslsolution.speakmateai.entity.Progress.builder().student(user).xp(0).level(1).currentStreak(0).longestStreak(0).totalPracticeMinutes(0).totalSpeakingSessions(0).totalGrammarChecks(0).totalVocabularyWords(0).build());
 			int newXp = (progress.getXp() == null ? 0 : progress.getXp()) + 10;
 			progress.setXp(newXp);
 			progress.setLevel((newXp / 500) + 1);
@@ -116,10 +116,10 @@ public class VocabularyServiceImpl implements VocabularyService {
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
 
-		return vocabularyRepository.findByUserOrderByCreatedAtDesc(user).stream()
+		return vocabularyRepository.findByStudentOrderByCreatedAtDesc(user).stream()
 				.map(vocabulary -> VocabularyResponse.builder().id(vocabulary.getId()).word(vocabulary.getWord())
 						.meaning(vocabulary.getMeaning()).exampleSentence(vocabulary.getExampleSentence())
 						.synonym(vocabulary.getSynonym()).antonym(vocabulary.getAntonym())
@@ -144,10 +144,10 @@ public class VocabularyServiceImpl implements VocabularyService {
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
 
-		return vocabularyRepository.findByUserAndFavoriteTrue(user).stream()
+		return vocabularyRepository.findByStudentAndFavoriteTrue(user).stream()
 				.map(vocabulary -> VocabularyResponse.builder().id(vocabulary.getId()).word(vocabulary.getWord())
 						.meaning(vocabulary.getMeaning()).exampleSentence(vocabulary.getExampleSentence())
 						.synonym(vocabulary.getSynonym()).antonym(vocabulary.getAntonym())
@@ -179,10 +179,10 @@ public class VocabularyServiceImpl implements VocabularyService {
 	@Override
 	public List<java.util.Map<String, Object>> getQuiz() {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
 
-		List<Vocabulary> userWords = vocabularyRepository.findByUserOrderByCreatedAtDesc(user);
+		List<Vocabulary> userWords = vocabularyRepository.findByStudentOrderByCreatedAtDesc(user);
 		
 		List<java.util.Map<String, String>> fallbackList = List.of(
 			java.util.Map.of("word", "articulate", "meaning", "Expressing oneself clearly and effectively."),

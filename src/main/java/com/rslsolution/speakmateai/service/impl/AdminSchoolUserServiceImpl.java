@@ -16,10 +16,11 @@ import com.rslsolution.speakmateai.dto.request.AdminSchoolUserCreateRequest;
 import com.rslsolution.speakmateai.dto.request.AdminSchoolUserUpdateRequest;
 import com.rslsolution.speakmateai.dto.response.AdminSchoolUserResponse;
 import com.rslsolution.speakmateai.dto.response.UserStatisticsResponse;
-import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 import com.rslsolution.speakmateai.enums.Role;
 import com.rslsolution.speakmateai.enums.UserType;
 import com.rslsolution.speakmateai.repository.SchoolUserSpecification;
+import com.rslsolution.speakmateai.repository.StudentRepository;
 import com.rslsolution.speakmateai.repository.UserRepository;
 import com.rslsolution.speakmateai.service.AdminSchoolUserService;
 
@@ -28,14 +29,16 @@ import com.rslsolution.speakmateai.service.AdminSchoolUserService;
 public class AdminSchoolUserServiceImpl implements AdminSchoolUserService {
 
     private final UserRepository userRepository;
+    private final StudentRepository studentRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public AdminSchoolUserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public AdminSchoolUserServiceImpl(UserRepository userRepository, StudentRepository studentRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.studentRepository = studentRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
-    private AdminSchoolUserResponse mapToResponse(User user) {
+    private AdminSchoolUserResponse mapToResponse(Student user) {
         if (user == null) {
             return null;
         }
@@ -74,15 +77,15 @@ public class AdminSchoolUserServiceImpl implements AdminSchoolUserService {
                 : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        Specification<User> spec = SchoolUserSpecification.filterSchoolUsers(keyword, standard, division, schoolName, status, registrationFrom, registrationTo);
+        Specification<Student> spec = SchoolUserSpecification.filterSchoolUsers(keyword, standard, division, schoolName, status, registrationFrom, registrationTo);
 
-        Page<User> users = userRepository.findAll(spec, pageable);
+        Page<Student> users = studentRepository.findAll(spec, pageable);
         return users.map(this::mapToResponse);
     }
 
     @Override
     public AdminSchoolUserResponse getSchoolUserById(Long id) {
-        User user = userRepository.findById(id)
+        Student user = studentRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("School User not found with id: " + id));
         
         if (user.getUserType() != UserType.SCHOOL) {
@@ -98,7 +101,7 @@ public class AdminSchoolUserServiceImpl implements AdminSchoolUserService {
             throw new IllegalArgumentException("User with this email already exists");
         }
         
-        User user = new User();
+        Student user = new Student();
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
         user.setEmail(request.getEmail());
@@ -115,13 +118,13 @@ public class AdminSchoolUserServiceImpl implements AdminSchoolUserService {
         user.setParentName(request.getParentName());
         user.setParentPhone(request.getParentPhone());
         
-        User savedUser = userRepository.save(user);
+        Student savedUser = studentRepository.save(user);
         return mapToResponse(savedUser);
     }
 
     @Override
     public AdminSchoolUserResponse updateSchoolUser(Long id, AdminSchoolUserUpdateRequest request) {
-        User user = userRepository.findById(id)
+        Student user = studentRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("School User not found with id: " + id));
                 
         if (user.getUserType() != UserType.SCHOOL) {
@@ -142,13 +145,13 @@ public class AdminSchoolUserServiceImpl implements AdminSchoolUserService {
             user.setActive(request.getActive());
         }
 
-        User savedUser = userRepository.save(user);
+        Student savedUser = studentRepository.save(user);
         return mapToResponse(savedUser);
     }
 
     @Override
     public void deleteSchoolUser(Long id) {
-        User user = userRepository.findById(id)
+        Student user = studentRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("School User not found with id: " + id));
         
         if (user.getUserType() != UserType.SCHOOL) {
@@ -157,23 +160,23 @@ public class AdminSchoolUserServiceImpl implements AdminSchoolUserService {
         
         // Soft delete
         user.setActive(false);
-        userRepository.save(user);
+        studentRepository.save(user);
     }
 
     @Override
     public UserStatisticsResponse getSchoolUserStatistics() {
-        Specification<User> spec = SchoolUserSpecification.filterSchoolUsers(null, null, null, null, null, null, null);
-        long totalUsers = userRepository.count(spec);
+        Specification<Student> spec = SchoolUserSpecification.filterSchoolUsers(null, null, null, null, null, null, null);
+        long totalUsers = studentRepository.count(spec);
         
-        Specification<User> activeSpec = SchoolUserSpecification.filterSchoolUsers(null, null, null, null, true, null, null);
-        long activeUsers = userRepository.count(activeSpec);
+        Specification<Student> activeSpec = SchoolUserSpecification.filterSchoolUsers(null, null, null, null, true, null, null);
+        long activeUsers = studentRepository.count(activeSpec);
         
-        Specification<User> inactiveSpec = SchoolUserSpecification.filterSchoolUsers(null, null, null, null, false, null, null);
-        long inactiveUsers = userRepository.count(inactiveSpec);
+        Specification<Student> inactiveSpec = SchoolUserSpecification.filterSchoolUsers(null, null, null, null, false, null, null);
+        long inactiveUsers = studentRepository.count(inactiveSpec);
         
         LocalDateTime thisMonthStart = LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
-        Specification<User> newThisMonthSpec = SchoolUserSpecification.filterSchoolUsers(null, null, null, null, null, thisMonthStart, null);
-        long newUsersThisMonth = userRepository.count(newThisMonthSpec);
+        Specification<Student> newThisMonthSpec = SchoolUserSpecification.filterSchoolUsers(null, null, null, null, null, thisMonthStart, null);
+        long newUsersThisMonth = studentRepository.count(newThisMonthSpec);
         
         return UserStatisticsResponse.builder()
                 .totalUsers(totalUsers)
@@ -185,13 +188,13 @@ public class AdminSchoolUserServiceImpl implements AdminSchoolUserService {
 
     @Override
     public String exportSchoolUsersCsv() {
-        Specification<User> spec = SchoolUserSpecification.filterSchoolUsers(null, null, null, null, null, null, null);
-        java.util.List<User> users = userRepository.findAll(spec);
+        Specification<Student> spec = SchoolUserSpecification.filterSchoolUsers(null, null, null, null, null, null, null);
+        java.util.List<Student> users = studentRepository.findAll(spec);
         
         StringBuilder csvBuilder = new StringBuilder();
         csvBuilder.append("ID,First Name,Last Name,Email,Phone,School Name,Standard,Division,Roll Number,Parent Name,Parent Phone,Status,Registration Date\n");
         
-        for (User user : users) {
+        for (Student user : users) {
             csvBuilder.append(user.getId()).append(",")
                     .append(escapeSpecialCharacters(user.getFirstName())).append(",")
                     .append(escapeSpecialCharacters(user.getLastName())).append(",")

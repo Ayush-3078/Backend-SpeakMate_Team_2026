@@ -28,16 +28,16 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 	
 	long countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 
-	@Query("SELECT COUNT(l) FROM LessonProgress l WHERE l.user.id = :userId")
+	@Query("SELECT COUNT(l) FROM LessonProgress l WHERE l.student.id = :userId")
 	long countLessonProgressByUserId(@Param("userId") Long userId);
 
-	@Query("SELECT COUNT(s) FROM SpeakingSession s WHERE s.user.id = :userId")
+	@Query("SELECT COUNT(s) FROM SpeakingSession s WHERE s.student.id = :userId")
 	long countSpeakingSessionsByUserId(@Param("userId") Long userId);
 
-	@Query("SELECT COUNT(g) FROM GrammarHistory g WHERE g.user.id = :userId")
+	@Query("SELECT COUNT(g) FROM GrammarHistory g WHERE g.student.id = :userId")
 	long countGrammarHistoriesByUserId(@Param("userId") Long userId);
 
-	@Query("SELECT COUNT(v) FROM Vocabulary v WHERE v.user.id = :userId")
+	@Query("SELECT COUNT(v) FROM Vocabulary v WHERE v.student.id = :userId")
 	long countVocabularyByUserId(@Param("userId") Long userId);
 
 	@org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE u.role = 'STUDENT'")

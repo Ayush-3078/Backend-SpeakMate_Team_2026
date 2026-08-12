@@ -25,7 +25,7 @@ import com.rslsolution.speakmateai.service.DashboardService;
 @Transactional
 public class DashboardServiceImpl implements DashboardService {
 
-	private final UserRepository userRepository;
+	private final StudentRepository studentRepository;
 	private final ProgressRepository progressRepository;
 	private final OnboardingRepository onboardingRepository;
 	private final SpeakingSessionRepository speakingSessionRepository;
@@ -40,7 +40,7 @@ public class DashboardServiceImpl implements DashboardService {
 	private final AdminRepository adminRepository;
 
 	public DashboardServiceImpl(
-			UserRepository userRepository,
+			StudentRepository studentRepository,
 			ProgressRepository progressRepository,
 			OnboardingRepository onboardingRepository,
 			SpeakingSessionRepository speakingSessionRepository,
@@ -53,7 +53,7 @@ public class DashboardServiceImpl implements DashboardService {
 			NotificationRepository notificationRepository,
 			ChatSessionRepository chatSessionRepository,
 			AdminRepository adminRepository) {
-		this.userRepository = userRepository;
+		this.studentRepository = studentRepository;
 		this.progressRepository = progressRepository;
 		this.onboardingRepository = onboardingRepository;
 		this.speakingSessionRepository = speakingSessionRepository;
@@ -68,24 +68,24 @@ public class DashboardServiceImpl implements DashboardService {
 		this.adminRepository = adminRepository;
 	}
 
-	private User getCurrentUser() {
+	private Student getCurrentUser() {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		String email = authentication.getName();
 		
-		User user = userRepository.findByEmail(email).orElse(null);
+		Student user = studentRepository.findByEmail(email).orElse(null);
 		if (user != null) {
 			return user;
 		}
 		
 		Admin admin = adminRepository.findByEmail(email).orElse(null);
 		if (admin != null && admin.getRole() == Role.SUPER_ADMIN) {
-			User proxyAdmin = new User();
+			Student proxyAdmin = new Student();
 			proxyAdmin.setEmail(admin.getEmail());
 			proxyAdmin.setRole(admin.getRole());
 			return proxyAdmin;
 		}
 
-		throw new UserNotFoundException("User not found");
+		throw new UserNotFoundException("Student not found");
 	}
 
 	private LessonResponse mapToLessonResponse(Lesson l, LessonProgress p) {
@@ -129,8 +129,8 @@ public class DashboardServiceImpl implements DashboardService {
 
 	@Override
 	public DashboardSummaryResponse getDashboardSummary() {
-		User user = getCurrentUser();
-		Progress progress = progressRepository.findByUser(user).orElse(null);
+		Student user = getCurrentUser();
+		Progress progress = progressRepository.findByStudent(user).orElse(null);
 		int xp = (progress != null) ? progress.getXp() : 0;
 		String rank;
 		if (xp < 100) rank = "Bronze III";
@@ -202,7 +202,7 @@ public class DashboardServiceImpl implements DashboardService {
 		List<RecentActivityResponse> recentActivityRes = getRecentActivity();
 
 		// 8. Active and Upcoming Lessons
-		List<LessonProgress> userProgressList = lessonProgressRepository.findByUser(user);
+		List<LessonProgress> userProgressList = lessonProgressRepository.findByStudent(user);
 		Map<Long, LessonProgress> progressMap = userProgressList.stream()
 				.collect(Collectors.toMap(p -> p.getLesson().getId(), p -> p, (a, b) -> a));
 
@@ -216,7 +216,7 @@ public class DashboardServiceImpl implements DashboardService {
 				: activeLessonsList.stream().skip(1).map(l -> mapToLessonResponse(l, progressMap.get(l.getId()))).toList();
 
 		// 9. Notifications (latest unread notifications)
-		List<Notification> unreadNotificationsList = notificationRepository.findByUserAndIsReadFalse(user);
+		List<Notification> unreadNotificationsList = notificationRepository.findByStudentAndIsReadFalse(user);
 		unreadNotificationsList.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
 		Integer unreadCount = unreadNotificationsList.size();
 
@@ -232,7 +232,7 @@ public class DashboardServiceImpl implements DashboardService {
 				.toList();
 
 		// 10. Achievements (latest unlocked achievements)
-		List<Achievement> unlockedAchievements = achievementRepository.findByUserAndUnlockedTrue(user);
+		List<Achievement> unlockedAchievements = achievementRepository.findByStudentAndUnlockedTrue(user);
 		unlockedAchievements.sort((a, b) -> {
 			LocalDateTime aTime = a.getUnlockedAt() != null ? a.getUnlockedAt() : a.getCreatedAt();
 			LocalDateTime bTime = b.getUnlockedAt() != null ? b.getUnlockedAt() : b.getCreatedAt();
@@ -256,7 +256,7 @@ public class DashboardServiceImpl implements DashboardService {
 		ContinueLearningResponse continueLearning = null;
 
 		// Priority 1: Speaking Session in progress
-		List<SpeakingSession> sessionsList = speakingSessionRepository.findByUserOrderByCreatedAtDesc(user);
+		List<SpeakingSession> sessionsList = speakingSessionRepository.findByStudentOrderByCreatedAtDesc(user);
 		SpeakingSession activeSession = sessionsList.stream()
 				.filter(s -> s.getOverallScore() == null || s.getOverallScore() == 0.0 || s.getDuration() == 0)
 				.findFirst()
@@ -296,7 +296,7 @@ public class DashboardServiceImpl implements DashboardService {
 
 		// Priority 3: Vocabulary Quiz (if they have vocabulary words)
 		if (continueLearning == null) {
-			List<Vocabulary> vocabs = vocabularyRepository.findByUser(user);
+			List<Vocabulary> vocabs = vocabularyRepository.findByStudent(user);
 			if (!vocabs.isEmpty()) {
 				continueLearning = ContinueLearningResponse.builder()
 						.module("Vocabulary Quiz")
@@ -310,7 +310,7 @@ public class DashboardServiceImpl implements DashboardService {
 
 		// Priority 4: Grammar Exercise (if they have grammar check history)
 		if (continueLearning == null) {
-			List<GrammarHistory> grammars = grammarHistoryRepository.findByUser(user);
+			List<GrammarHistory> grammars = grammarHistoryRepository.findByStudent(user);
 			if (!grammars.isEmpty()) {
 				continueLearning = ContinueLearningResponse.builder()
 						.module("Grammar Exercise")
@@ -324,7 +324,7 @@ public class DashboardServiceImpl implements DashboardService {
 
 		// Priority 5: AI Chat in progress
 		if (continueLearning == null) {
-			List<ChatSession> chatSessions = chatSessionRepository.findByUserOrderByUpdatedAtDesc(user);
+			List<ChatSession> chatSessions = chatSessionRepository.findByStudentOrderByUpdatedAtDesc(user);
 			if (!chatSessions.isEmpty()) {
 				ChatSession latestChat = chatSessions.get(0);
 				continueLearning = ContinueLearningResponse.builder()
@@ -447,10 +447,10 @@ public class DashboardServiceImpl implements DashboardService {
 
 	@Override
 	public DailyGoalResponse getDailyGoal() {
-		User user = getCurrentUser();
-		List<SpeakingSession> sessions = speakingSessionRepository.findByUser(user);
-		List<Vocabulary> vocabs = vocabularyRepository.findByUser(user);
-		Onboarding onboarding = onboardingRepository.findByUser(user).orElse(null);
+		Student user = getCurrentUser();
+		List<SpeakingSession> sessions = speakingSessionRepository.findByStudent(user);
+		List<Vocabulary> vocabs = vocabularyRepository.findByStudent(user);
+		Onboarding onboarding = onboardingRepository.findByStudent(user).orElse(null);
 
 		LocalDate today = LocalDate.now();
 
@@ -490,7 +490,7 @@ public class DashboardServiceImpl implements DashboardService {
 
 	@Override
 	public List<WeeklyProgressResponse> getWeeklyProgress() {
-		User user = getCurrentUser();
+		Student user = getCurrentUser();
 		String[] dayNames = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
 		List<WeeklyProgressResponse> weeklyProgress = new ArrayList<>();
 		for (String dayName : dayNames) {
@@ -506,7 +506,7 @@ public class DashboardServiceImpl implements DashboardService {
 		LocalDate monday = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
 		LocalDate sunday = monday.plusDays(6);
 
-		List<SpeakingSession> sessions = speakingSessionRepository.findByUser(user);
+		List<SpeakingSession> sessions = speakingSessionRepository.findByStudent(user);
 		int[] studySeconds = new int[7];
 		int[] speakingSessions = new int[7];
 		int[] lessonsCompleted = new int[7];
@@ -535,11 +535,11 @@ public class DashboardServiceImpl implements DashboardService {
 
 	@Override
 	public StatisticsResponse getStatistics() {
-		User user = getCurrentUser();
-		List<SpeakingSession> sessions = speakingSessionRepository.findByUser(user);
-		List<Vocabulary> vocabs = vocabularyRepository.findByUser(user);
-		List<GrammarHistory> grammars = grammarHistoryRepository.findByUser(user);
-		Progress progress = progressRepository.findByUser(user).orElse(null);
+		Student user = getCurrentUser();
+		List<SpeakingSession> sessions = speakingSessionRepository.findByStudent(user);
+		List<Vocabulary> vocabs = vocabularyRepository.findByStudent(user);
+		List<GrammarHistory> grammars = grammarHistoryRepository.findByStudent(user);
+		Progress progress = progressRepository.findByStudent(user).orElse(null);
 		List<Lesson> lessons = lessonRepository.findByActiveTrue();
 
 		int totalLessons = lessons.size();
@@ -595,10 +595,10 @@ public class DashboardServiceImpl implements DashboardService {
 
 	@Override
 	public List<RecentActivityResponse> getRecentActivity() {
-		User user = getCurrentUser();
+		Student user = getCurrentUser();
 		List<RecentActivityResponse> activities = new ArrayList<>();
 
-		List<SpeakingSession> sessions = speakingSessionRepository.findByUserOrderByCreatedAtDesc(user);
+		List<SpeakingSession> sessions = speakingSessionRepository.findByStudentOrderByCreatedAtDesc(user);
 		for (SpeakingSession s : sessions) {
 			activities.add(RecentActivityResponse.builder()
 					.id("speaking-" + s.getId())
@@ -610,7 +610,7 @@ public class DashboardServiceImpl implements DashboardService {
 					.build());
 		}
 
-		List<Vocabulary> vocabs = vocabularyRepository.findByUserOrderByCreatedAtDesc(user);
+		List<Vocabulary> vocabs = vocabularyRepository.findByStudentOrderByCreatedAtDesc(user);
 		for (Vocabulary v : vocabs) {
 			activities.add(RecentActivityResponse.builder()
 					.id("vocabulary-" + v.getId())
@@ -622,7 +622,7 @@ public class DashboardServiceImpl implements DashboardService {
 					.build());
 		}
 
-		List<GrammarHistory> grammars = grammarHistoryRepository.findByUserOrderByCreatedAtDesc(user);
+		List<GrammarHistory> grammars = grammarHistoryRepository.findByStudentOrderByCreatedAtDesc(user);
 		for (GrammarHistory g : grammars) {
 			activities.add(RecentActivityResponse.builder()
 					.id("grammar-" + g.getId())
@@ -634,7 +634,7 @@ public class DashboardServiceImpl implements DashboardService {
 					.build());
 		}
 
-		List<ChatHistory> chats = chatHistoryRepository.findByUser(user);
+		List<ChatHistory> chats = chatHistoryRepository.findByStudent(user);
 		for (ChatHistory c : chats) {
 			activities.add(RecentActivityResponse.builder()
 					.id("chat-" + c.getId())

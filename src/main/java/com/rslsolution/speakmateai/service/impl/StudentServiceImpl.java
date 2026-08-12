@@ -4,10 +4,12 @@ import com.rslsolution.speakmateai.dto.request.StudentRequest;
 import com.rslsolution.speakmateai.dto.response.StudentImportResponse;
 import com.rslsolution.speakmateai.dto.response.StudentResponse;
 import com.rslsolution.speakmateai.entity.Admin;
+import com.rslsolution.speakmateai.entity.Student;
 import com.rslsolution.speakmateai.entity.User;
 import com.rslsolution.speakmateai.enums.Role;
 import com.rslsolution.speakmateai.enums.Status;
 import com.rslsolution.speakmateai.repository.AdminRepository;
+import com.rslsolution.speakmateai.repository.StudentRepository;
 import com.rslsolution.speakmateai.repository.UserRepository;
 import com.rslsolution.speakmateai.service.StudentService;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ import java.util.stream.Collectors;
 public class StudentServiceImpl implements StudentService {
 
     private final UserRepository userRepository;
+    private final StudentRepository studentRepository;
     private final AdminRepository adminRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -56,12 +59,12 @@ public class StudentServiceImpl implements StudentService {
     @Override
     public List<StudentResponse> getAllStudents() {
         User currentUser = getCurrentUser();
-        List<User> students;
+        List<Student> students;
 
         if (currentUser.getRole() == Role.SUPER_ADMIN) {
-            students = userRepository.findAllStudents();
-        } else if (currentUser.getRole() == Role.SCHOOL_ADMIN) {
-            students = userRepository.findAllStudentsBySchoolId(currentUser.getSchoolId());
+            students = studentRepository.findAll();
+        } else if (currentUser.getRole() == Role.SCHOOL_ADMIN || currentUser.getRole() == Role.TEACHER) {
+            students = studentRepository.findBySchoolId(currentUser.getSchoolId());
         } else {
             throw new RuntimeException("Unauthorized to access students");
         }
@@ -72,13 +75,13 @@ public class StudentServiceImpl implements StudentService {
     @Override
     public StudentResponse getStudentById(Long id) {
         User currentUser = getCurrentUser();
-        User student;
+        Student student;
 
         if (currentUser.getRole() == Role.SUPER_ADMIN) {
-            student = userRepository.findStudentById(id)
+            student = studentRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Student not found"));
-        } else if (currentUser.getRole() == Role.SCHOOL_ADMIN) {
-            student = userRepository.findStudentByIdAndSchoolId(id, currentUser.getSchoolId())
+        } else if (currentUser.getRole() == Role.SCHOOL_ADMIN || currentUser.getRole() == Role.TEACHER) {
+            student = studentRepository.findByIdAndSchoolId(id, currentUser.getSchoolId())
                     .orElseThrow(() -> new RuntimeException("Student not found or not in your school"));
         } else {
             throw new RuntimeException("Unauthorized to access students");
@@ -97,7 +100,7 @@ public class StudentServiceImpl implements StudentService {
                 throw new RuntimeException("Super Admin must provide a schoolId to assign the student to.");
             }
             schoolIdToUse = request.getSchoolId();
-        } else if (currentUser.getRole() == Role.SCHOOL_ADMIN) {
+        } else if (currentUser.getRole() == Role.SCHOOL_ADMIN || currentUser.getRole() == Role.TEACHER) {
             schoolIdToUse = currentUser.getSchoolId(); // Force school ID of current user
         } else {
             throw new RuntimeException("Unauthorized to create students");
@@ -111,29 +114,28 @@ public class StudentServiceImpl implements StudentService {
         java.util.Random random = new java.util.Random();
         String generatedStudentId = String.format("STU-2026-%04d", random.nextInt(10000));
 
-        User student = User.builder()
-                .firstName(request.getFirstName())
-                .lastName(request.getLastName())
-                .email(request.getEmail())
-                .password(passwordEncoder.encode("defaultPassword123!")) // Set a default password
-                .role(Role.STUDENT)
-                .schoolId(schoolIdToUse)
-                .studentId(generatedStudentId)
-                .status(Status.ACTIVE)
-                .active(true)
-                .build();
+        Student student = new Student();
+        student.setFirstName(request.getFirstName());
+        student.setLastName(request.getLastName());
+        student.setEmail(request.getEmail());
+        student.setPassword(passwordEncoder.encode("defaultPassword123!"));
+        student.setRole(Role.STUDENT);
+        student.setSchoolId(schoolIdToUse);
+        student.setStudentId(generatedStudentId);
+        student.setStatus(Status.ACTIVE);
+        student.setActive(true);
 
-        User savedStudent = userRepository.save(student);
+        Student savedStudent = studentRepository.save(student);
         return mapToResponse(savedStudent);
     }
 
     @Override
     public StudentResponse updateStudent(Long id, StudentRequest request) {
         User currentUser = getCurrentUser();
-        User student;
+        Student student;
 
         if (currentUser.getRole() == Role.SUPER_ADMIN) {
-            student = userRepository.findStudentById(id)
+            student = studentRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Student not found"));
             
             // Allow Super Admin to change schoolId if provided in request
@@ -142,8 +144,8 @@ public class StudentServiceImpl implements StudentService {
             }
             
 
-        } else if (currentUser.getRole() == Role.SCHOOL_ADMIN) {
-            student = userRepository.findStudentByIdAndSchoolId(id, currentUser.getSchoolId())
+        } else if (currentUser.getRole() == Role.SCHOOL_ADMIN || currentUser.getRole() == Role.TEACHER) {
+            student = studentRepository.findByIdAndSchoolId(id, currentUser.getSchoolId())
                     .orElseThrow(() -> new RuntimeException("Student not found or not in your school"));
             
             // Ignore schoolId in request, keeping the student in the current school
@@ -162,26 +164,26 @@ public class StudentServiceImpl implements StudentService {
         student.setLastName(request.getLastName());
         student.setEmail(request.getEmail());
 
-        User updatedStudent = userRepository.save(student);
+        Student updatedStudent = studentRepository.save(student);
         return mapToResponse(updatedStudent);
     }
 
     @Override
     public void deleteStudent(Long id) {
         User currentUser = getCurrentUser();
-        User student;
+        Student student;
 
         if (currentUser.getRole() == Role.SUPER_ADMIN) {
-            student = userRepository.findStudentById(id)
+            student = studentRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Student not found"));
-        } else if (currentUser.getRole() == Role.SCHOOL_ADMIN) {
-            student = userRepository.findStudentByIdAndSchoolId(id, currentUser.getSchoolId())
+        } else if (currentUser.getRole() == Role.SCHOOL_ADMIN || currentUser.getRole() == Role.TEACHER) {
+            student = studentRepository.findByIdAndSchoolId(id, currentUser.getSchoolId())
                     .orElseThrow(() -> new RuntimeException("Student not found or not in your school"));
         } else {
             throw new RuntimeException("Unauthorized to delete students");
         }
 
-        userRepository.delete(student);
+        studentRepository.delete(student);
     }
 
     @Override
@@ -191,7 +193,7 @@ public class StudentServiceImpl implements StudentService {
 
         if (currentUser.getRole() == Role.SUPER_ADMIN) {
             throw new RuntimeException("Super Admin cannot perform bulk import without school context. Not fully implemented yet.");
-        } else if (currentUser.getRole() == Role.SCHOOL_ADMIN) {
+        } else if (currentUser.getRole() == Role.SCHOOL_ADMIN || currentUser.getRole() == Role.TEACHER) {
             schoolIdToUse = currentUser.getSchoolId();
         } else {
             throw new RuntimeException("Unauthorized to import students");
@@ -277,23 +279,23 @@ public class StudentServiceImpl implements StudentService {
     @Override
     public void resetPassword(Long id, String newPassword) {
         User currentUser = getCurrentUser();
-        User student;
+        Student student;
 
         if (currentUser.getRole() == Role.SUPER_ADMIN) {
-            student = userRepository.findStudentById(id)
+            student = studentRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Student not found"));
-        } else if (currentUser.getRole() == Role.SCHOOL_ADMIN) {
-            student = userRepository.findStudentByIdAndSchoolId(id, currentUser.getSchoolId())
+        } else if (currentUser.getRole() == Role.SCHOOL_ADMIN || currentUser.getRole() == Role.TEACHER) {
+            student = studentRepository.findByIdAndSchoolId(id, currentUser.getSchoolId())
                     .orElseThrow(() -> new RuntimeException("Student not found or not in your school"));
         } else {
             throw new RuntimeException("Unauthorized to reset student passwords");
         }
 
         student.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(student);
+        studentRepository.save(student);
     }
 
-    private StudentResponse mapToResponse(User user) {
+    private StudentResponse mapToResponse(Student user) {
         return StudentResponse.builder()
                 .id(user.getId())
                 .firstName(user.getFirstName())

@@ -28,12 +28,12 @@ import com.rslsolution.speakmateai.dto.groq.GroqResponse;
 import com.rslsolution.speakmateai.entity.ChatBookmark;
 import com.rslsolution.speakmateai.entity.ChatMessage;
 import com.rslsolution.speakmateai.entity.ChatSession;
-import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 import com.rslsolution.speakmateai.exception.UserNotFoundException;
 import com.rslsolution.speakmateai.repository.ChatBookmarkRepository;
 import com.rslsolution.speakmateai.repository.ChatMessageRepository;
 import com.rslsolution.speakmateai.repository.ChatSessionRepository;
-import com.rslsolution.speakmateai.repository.UserRepository;
+import com.rslsolution.speakmateai.repository.StudentRepository;
 import com.rslsolution.speakmateai.service.AIChatService;
 
 @Service
@@ -43,7 +43,7 @@ public class AIChatServiceImpl implements AIChatService {
 	private final ChatSessionRepository chatSessionRepository;
 	private final ChatMessageRepository chatMessageRepository;
 	private final ChatBookmarkRepository chatBookmarkRepository;
-	private final UserRepository userRepository;
+	private final StudentRepository studentRepository;
 	private final RestTemplate restTemplate;
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -60,28 +60,28 @@ public class AIChatServiceImpl implements AIChatService {
 			ChatSessionRepository chatSessionRepository,
 			ChatMessageRepository chatMessageRepository,
 			ChatBookmarkRepository chatBookmarkRepository,
-			UserRepository userRepository,
+			StudentRepository studentRepository,
 			RestTemplate restTemplate) {
 		this.chatSessionRepository = chatSessionRepository;
 		this.chatMessageRepository = chatMessageRepository;
 		this.chatBookmarkRepository = chatBookmarkRepository;
-		this.userRepository = userRepository;
+		this.studentRepository = studentRepository;
 		this.restTemplate = restTemplate;
 	}
 
-	private User currentUser() {
+	private Student currentStudent() {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getName())) {
 			throw new UserNotFoundException("User not authenticated");
 		}
-		return userRepository.findByEmail(authentication.getName())
+		return studentRepository.findByEmail(authentication.getName())
 				.orElseThrow(() -> new UserNotFoundException("User not found"));
 	}
 
 	@Override
 	public List<ChatSessionResponse> getChatHistory() {
-		User user = currentUser();
-		return chatSessionRepository.findByUserOrderByUpdatedAtDesc(user).stream()
+		Student user = currentStudent();
+		return chatSessionRepository.findByStudentOrderByUpdatedAtDesc(user).stream()
 				.map(s -> ChatSessionResponse.builder()
 						.id(s.getId())
 						.mode(s.getMode())
@@ -95,11 +95,11 @@ public class AIChatServiceImpl implements AIChatService {
 
 	@Override
 	public ChatSessionDetailResponse getSessionDetail(Long id) {
-		User user = currentUser();
+		Student user = currentStudent();
 		ChatSession session = chatSessionRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("Chat session not found"));
 
-		if (!session.getUser().getId().equals(user.getId())) {
+		if (!session.getStudent().getId().equals(user.getId())) {
 			throw new SecurityException("Unauthorized access to chat session");
 		}
 
@@ -114,7 +114,7 @@ public class AIChatServiceImpl implements AIChatService {
 						.vocabularySuggestions(m.getVocabularySuggestions())
 						.explanation(m.getExplanation())
 						.followUpQuestion(m.getFollowUpQuestion())
-						.bookmarked(chatBookmarkRepository.existsByUserAndMessage(user, m))
+						.bookmarked(chatBookmarkRepository.existsByStudentAndMessage(user, m))
 						.createdAt(m.getCreatedAt())
 						.build())
 				.toList();
@@ -130,12 +130,12 @@ public class AIChatServiceImpl implements AIChatService {
 
 	@Override
 	public ChatSessionResponse startSession(ChatStartRequest request) {
-		User user = currentUser();
+		Student user = currentStudent();
 
 		String defaultTitle = request.getMode() + " Session";
 
 		ChatSession session = ChatSession.builder()
-				.user(user)
+				.student(user)
 				.mode(request.getMode())
 				.title(defaultTitle)
 				.build();
@@ -176,11 +176,11 @@ public class AIChatServiceImpl implements AIChatService {
 
 	@Override
 	public ChatMessageResponse processMessage(ChatSessionMessageRequest request) {
-		User user = currentUser();
+		Student user = currentStudent();
 		ChatSession session = chatSessionRepository.findById(request.getSessionId())
 				.orElseThrow(() -> new IllegalArgumentException("Chat session not found"));
 
-		if (!session.getUser().getId().equals(user.getId())) {
+		if (!session.getStudent().getId().equals(user.getId())) {
 			throw new SecurityException("Unauthorized access to chat session");
 		}
 
@@ -355,11 +355,11 @@ public class AIChatServiceImpl implements AIChatService {
 
 	@Override
 	public void deleteSession(Long id) {
-		User user = currentUser();
+		Student user = currentStudent();
 		ChatSession session = chatSessionRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("Chat session not found"));
 
-		if (!session.getUser().getId().equals(user.getId())) {
+		if (!session.getStudent().getId().equals(user.getId())) {
 			throw new SecurityException("Unauthorized access to chat session");
 		}
 
@@ -368,11 +368,11 @@ public class AIChatServiceImpl implements AIChatService {
 
 	@Override
 	public ChatSessionResponse renameSession(Long id, ChatRenameRequest request) {
-		User user = currentUser();
+		Student user = currentStudent();
 		ChatSession session = chatSessionRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("Chat session not found"));
 
-		if (!session.getUser().getId().equals(user.getId())) {
+		if (!session.getStudent().getId().equals(user.getId())) {
 			throw new SecurityException("Unauthorized access to chat session");
 		}
 
@@ -391,17 +391,17 @@ public class AIChatServiceImpl implements AIChatService {
 
 	@Override
 	public boolean toggleBookmark(Long messageId) {
-		User user = currentUser();
+		Student user = currentStudent();
 		ChatMessage message = chatMessageRepository.findById(messageId)
 				.orElseThrow(() -> new IllegalArgumentException("Chat message not found"));
 
-		Optional<ChatBookmark> existing = chatBookmarkRepository.findByUserAndMessage(user, message);
+		Optional<ChatBookmark> existing = chatBookmarkRepository.findByStudentAndMessage(user, message);
 		if (existing.isPresent()) {
 			chatBookmarkRepository.delete(existing.get());
 			return false; // Unbookmarked
 		} else {
 			ChatBookmark bookmark = ChatBookmark.builder()
-					.user(user)
+					.student(user)
 					.message(message)
 					.build();
 			chatBookmarkRepository.save(bookmark);
@@ -411,8 +411,8 @@ public class AIChatServiceImpl implements AIChatService {
 
 	@Override
 	public List<ChatMessageResponse> getBookmarkedMessages() {
-		User user = currentUser();
-		return chatBookmarkRepository.findByUserOrderByCreatedAtDesc(user).stream()
+		Student user = currentStudent();
+		return chatBookmarkRepository.findByStudentOrderByCreatedAtDesc(user).stream()
 				.map(b -> {
 					ChatMessage m = b.getMessage();
 					return ChatMessageResponse.builder()

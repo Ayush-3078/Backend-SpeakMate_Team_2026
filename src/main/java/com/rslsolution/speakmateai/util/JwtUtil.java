@@ -33,6 +33,16 @@ public class JwtUtil {
 				.compact();
 	}
 
+	public String generateUserToken(String email, String type) {
+		return Jwts.builder()
+				.setSubject(email)
+				.claim("type", type)
+				.setIssuedAt(new Date())
+				.setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
+				.signWith(getSigningKey(), SignatureAlgorithm.HS256)
+				.compact();
+	}
+
 	public String generateAdminToken(String email, String role, Long adminId) {
 		return Jwts.builder()
 				.setSubject(email)

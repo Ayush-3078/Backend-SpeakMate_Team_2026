@@ -6,15 +6,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.rslsolution.speakmateai.entity.Achievement;
-import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 
 @Repository
 public interface AchievementRepository extends JpaRepository<Achievement, Long> {
 
-	List<Achievement> findByUser(User user);
+	List<Achievement> findByStudent(Student student);
 
-	List<Achievement> findByUserOrderByCreatedAtDesc(User user);
+	List<Achievement> findByStudentOrderByCreatedAtDesc(Student student);
 
-	List<Achievement> findByUserAndUnlockedTrue(User user);
+	List<Achievement> findByStudentAndUnlockedTrue(Student student);
 
 }

@@ -11,11 +11,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.rslsolution.speakmateai.dto.request.AchievementRequest;
 import com.rslsolution.speakmateai.dto.response.AchievementResponse;
 import com.rslsolution.speakmateai.entity.Achievement;
-import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 import com.rslsolution.speakmateai.exception.AchievementNotFoundException;
 import com.rslsolution.speakmateai.exception.UserNotFoundException;
 import com.rslsolution.speakmateai.repository.AchievementRepository;
-import com.rslsolution.speakmateai.repository.UserRepository;
+import com.rslsolution.speakmateai.repository.StudentRepository;
 import com.rslsolution.speakmateai.service.AchievementService;
 import com.rslsolution.speakmateai.service.NotificationService;
 
@@ -24,15 +24,15 @@ import com.rslsolution.speakmateai.service.NotificationService;
 public class AchievementServiceImpl implements AchievementService {
 
 	private final AchievementRepository achievementRepository;
-	private final UserRepository userRepository;
+	private final StudentRepository studentRepository;
 	private final com.rslsolution.speakmateai.repository.ProgressRepository progressRepository;
 	private final NotificationService notificationService;
 
-	public AchievementServiceImpl(AchievementRepository achievementRepository, UserRepository userRepository,
+	public AchievementServiceImpl(AchievementRepository achievementRepository, StudentRepository studentRepository,
 			com.rslsolution.speakmateai.repository.ProgressRepository progressRepository,
 			NotificationService notificationService) {
 		this.achievementRepository = achievementRepository;
-		this.userRepository = userRepository;
+		this.studentRepository = studentRepository;
 		this.progressRepository = progressRepository;
 		this.notificationService = notificationService;
 	}
@@ -42,10 +42,10 @@ public class AchievementServiceImpl implements AchievementService {
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
 
-		Achievement achievement = Achievement.builder().user(user).title(request.getTitle())
+		Achievement achievement = Achievement.builder().student(user).title(request.getTitle())
 				.description(request.getDescription()).xpReward(request.getXpReward())
 				.tier(request.getTier() != null ? request.getTier() : 1)
 				.unlocked(request.getUnlocked())
@@ -65,18 +65,18 @@ public class AchievementServiceImpl implements AchievementService {
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
 
-		List<Achievement> userAchievements = achievementRepository.findByUser(user);
+		List<Achievement> userAchievements = achievementRepository.findByStudent(user);
 
 		if (userAchievements.isEmpty()) {
 			userAchievements = generateTierAchievements(user, 1);
 			userAchievements = achievementRepository.saveAll(userAchievements);
 		}
 
-		com.rslsolution.speakmateai.entity.Progress progress = progressRepository.findByUser(user)
-				.orElseGet(() -> com.rslsolution.speakmateai.entity.Progress.builder().user(user).xp(0).level(1).currentStreak(0).longestStreak(0).totalPracticeMinutes(0).totalSpeakingSessions(0).totalGrammarChecks(0).totalVocabularyWords(0).build());
+		com.rslsolution.speakmateai.entity.Progress progress = progressRepository.findByStudent(user)
+				.orElseGet(() -> com.rslsolution.speakmateai.entity.Progress.builder().student(user).xp(0).level(1).currentStreak(0).longestStreak(0).totalPracticeMinutes(0).totalSpeakingSessions(0).totalGrammarChecks(0).totalVocabularyWords(0).build());
 
 		boolean progressUpdated = false;
 
@@ -144,33 +144,33 @@ public class AchievementServiceImpl implements AchievementService {
 				.toList();
 	}
 
-	private List<Achievement> generateTierAchievements(User user, int tier) {
+	private List<Achievement> generateTierAchievements(Student user, int tier) {
 		if (tier == 1) {
 			return List.of(
-				Achievement.builder().user(user).tier(1).title("First Steps").description("Complete your first lesson!").xpReward(50).unlocked(false).build(),
-				Achievement.builder().user(user).tier(1).title("Speak Up").description("Complete your first speaking session!").xpReward(50).unlocked(false).build(),
-				Achievement.builder().user(user).tier(1).title("Word Collector").description("Save 5 words to your vocabulary!").xpReward(50).unlocked(false).build(),
-				Achievement.builder().user(user).tier(1).title("Grammar Guru").description("Perform 3 grammar corrections!").xpReward(50).unlocked(false).build(),
-				Achievement.builder().user(user).tier(1).title("Hot Streak").description("Reach a 3-day learning streak!").xpReward(50).unlocked(false).build(),
-				Achievement.builder().user(user).tier(1).title("Super Scholar").description("Earn 500 total learning XP!").xpReward(100).unlocked(false).build()
+				Achievement.builder().student(user).tier(1).title("First Steps").description("Complete your first lesson!").xpReward(50).unlocked(false).build(),
+				Achievement.builder().student(user).tier(1).title("Speak Up").description("Complete your first speaking session!").xpReward(50).unlocked(false).build(),
+				Achievement.builder().student(user).tier(1).title("Word Collector").description("Save 5 words to your vocabulary!").xpReward(50).unlocked(false).build(),
+				Achievement.builder().student(user).tier(1).title("Grammar Guru").description("Perform 3 grammar corrections!").xpReward(50).unlocked(false).build(),
+				Achievement.builder().student(user).tier(1).title("Hot Streak").description("Reach a 3-day learning streak!").xpReward(50).unlocked(false).build(),
+				Achievement.builder().student(user).tier(1).title("Super Scholar").description("Earn 500 total learning XP!").xpReward(100).unlocked(false).build()
 			);
 		} else if (tier == 2) {
 			return List.of(
-				Achievement.builder().user(user).tier(2).title("Lesson Master I").description("Complete 5 practice sessions or 60 minutes!").xpReward(75).unlocked(false).build(),
-				Achievement.builder().user(user).tier(2).title("Fluent Speaker I").description("Complete 5 speaking sessions!").xpReward(75).unlocked(false).build(),
-				Achievement.builder().user(user).tier(2).title("Vocabulary Builder").description("Save 15 words to your vocabulary!").xpReward(75).unlocked(false).build(),
-				Achievement.builder().user(user).tier(2).title("Grammar Expert").description("Perform 10 grammar corrections!").xpReward(75).unlocked(false).build(),
-				Achievement.builder().user(user).tier(2).title("Weekly Warrior").description("Reach a 7-day learning streak!").xpReward(100).unlocked(false).build(),
-				Achievement.builder().user(user).tier(2).title("Knowledge Elite").description("Earn 1,000 total learning XP!").xpReward(150).unlocked(false).build()
+				Achievement.builder().student(user).tier(2).title("Lesson Master I").description("Complete 5 practice sessions or 60 minutes!").xpReward(75).unlocked(false).build(),
+				Achievement.builder().student(user).tier(2).title("Fluent Speaker I").description("Complete 5 speaking sessions!").xpReward(75).unlocked(false).build(),
+				Achievement.builder().student(user).tier(2).title("Vocabulary Builder").description("Save 15 words to your vocabulary!").xpReward(75).unlocked(false).build(),
+				Achievement.builder().student(user).tier(2).title("Grammar Expert").description("Perform 10 grammar corrections!").xpReward(75).unlocked(false).build(),
+				Achievement.builder().student(user).tier(2).title("Weekly Warrior").description("Reach a 7-day learning streak!").xpReward(100).unlocked(false).build(),
+				Achievement.builder().student(user).tier(2).title("Knowledge Elite").description("Earn 1,000 total learning XP!").xpReward(150).unlocked(false).build()
 			);
 		} else if (tier == 3) {
 			return List.of(
-				Achievement.builder().user(user).tier(3).title("Lesson Master II").description("Practice for 150 total minutes!").xpReward(100).unlocked(false).build(),
-				Achievement.builder().user(user).tier(3).title("Fluent Speaker II").description("Complete 15 speaking sessions!").xpReward(100).unlocked(false).build(),
-				Achievement.builder().user(user).tier(3).title("Lexicon Master").description("Save 30 words to your vocabulary!").xpReward(100).unlocked(false).build(),
-				Achievement.builder().user(user).tier(3).title("Grammar Master").description("Perform 25 grammar corrections!").xpReward(100).unlocked(false).build(),
-				Achievement.builder().user(user).tier(3).title("Dedicated Learner").description("Reach a 14-day learning streak!").xpReward(150).unlocked(false).build(),
-				Achievement.builder().user(user).tier(3).title("Master Scholar").description("Earn 2,500 total learning XP!").xpReward(200).unlocked(false).build()
+				Achievement.builder().student(user).tier(3).title("Lesson Master II").description("Practice for 150 total minutes!").xpReward(100).unlocked(false).build(),
+				Achievement.builder().student(user).tier(3).title("Fluent Speaker II").description("Complete 15 speaking sessions!").xpReward(100).unlocked(false).build(),
+				Achievement.builder().student(user).tier(3).title("Lexicon Master").description("Save 30 words to your vocabulary!").xpReward(100).unlocked(false).build(),
+				Achievement.builder().student(user).tier(3).title("Grammar Master").description("Perform 25 grammar corrections!").xpReward(100).unlocked(false).build(),
+				Achievement.builder().student(user).tier(3).title("Dedicated Learner").description("Reach a 14-day learning streak!").xpReward(150).unlocked(false).build(),
+				Achievement.builder().student(user).tier(3).title("Master Scholar").description("Earn 2,500 total learning XP!").xpReward(200).unlocked(false).build()
 			);
 		} else {
 			int minutesGoal = tier * 60;
@@ -181,12 +181,12 @@ public class AchievementServiceImpl implements AchievementService {
 			int xpGoal = tier * 1000;
 
 			return List.of(
-				Achievement.builder().user(user).tier(tier).title("Practice Marathon Tier " + tier).description("Practice for " + minutesGoal + " total minutes!").xpReward(120).unlocked(false).build(),
-				Achievement.builder().user(user).tier(tier).title("Orator Tier " + tier).description("Complete " + speakingGoal + " speaking sessions!").xpReward(120).unlocked(false).build(),
-				Achievement.builder().user(user).tier(tier).title("Vocabulary Giant Tier " + tier).description("Save " + vocabGoal + " vocabulary words!").xpReward(120).unlocked(false).build(),
-				Achievement.builder().user(user).tier(tier).title("Grammar Virtuoso Tier " + tier).description("Perform " + grammarGoal + " grammar checks!").xpReward(120).unlocked(false).build(),
-				Achievement.builder().user(user).tier(tier).title("Unstoppable Streak Tier " + tier).description("Reach a " + streakGoal + "-day streak!").xpReward(150).unlocked(false).build(),
-				Achievement.builder().user(user).tier(tier).title("Grandmaster Tier " + tier).description("Earn " + xpGoal + " total learning XP!").xpReward(250).unlocked(false).build()
+				Achievement.builder().student(user).tier(tier).title("Practice Marathon Tier " + tier).description("Practice for " + minutesGoal + " total minutes!").xpReward(120).unlocked(false).build(),
+				Achievement.builder().student(user).tier(tier).title("Orator Tier " + tier).description("Complete " + speakingGoal + " speaking sessions!").xpReward(120).unlocked(false).build(),
+				Achievement.builder().student(user).tier(tier).title("Vocabulary Giant Tier " + tier).description("Save " + vocabGoal + " vocabulary words!").xpReward(120).unlocked(false).build(),
+				Achievement.builder().student(user).tier(tier).title("Grammar Virtuoso Tier " + tier).description("Perform " + grammarGoal + " grammar checks!").xpReward(120).unlocked(false).build(),
+				Achievement.builder().student(user).tier(tier).title("Unstoppable Streak Tier " + tier).description("Reach a " + streakGoal + "-day streak!").xpReward(150).unlocked(false).build(),
+				Achievement.builder().student(user).tier(tier).title("Grandmaster Tier " + tier).description("Earn " + xpGoal + " total learning XP!").xpReward(250).unlocked(false).build()
 			);
 		}
 	}
@@ -273,10 +273,10 @@ public class AchievementServiceImpl implements AchievementService {
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
 
-		return achievementRepository.findByUserAndUnlockedTrue(user).stream()
+		return achievementRepository.findByStudentAndUnlockedTrue(user).stream()
 				.map(achievement -> AchievementResponse.builder().id(achievement.getId()).title(achievement.getTitle())
 						.description(achievement.getDescription()).xpReward(achievement.getXpReward())
 						.unlocked(achievement.getUnlocked()).unlockedAt(achievement.getUnlockedAt())

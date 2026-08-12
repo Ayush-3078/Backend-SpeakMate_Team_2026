@@ -8,15 +8,15 @@ import org.springframework.stereotype.Repository;
 
 import com.rslsolution.speakmateai.entity.ChatBookmark;
 import com.rslsolution.speakmateai.entity.ChatMessage;
-import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 
 @Repository
 public interface ChatBookmarkRepository extends JpaRepository<ChatBookmark, Long> {
 
-	List<ChatBookmark> findByUserOrderByCreatedAtDesc(User user);
+	List<ChatBookmark> findByStudentOrderByCreatedAtDesc(Student student);
 
-	Optional<ChatBookmark> findByUserAndMessage(User user, ChatMessage message);
+	Optional<ChatBookmark> findByStudentAndMessage(Student student, ChatMessage message);
 
-	boolean existsByUserAndMessage(User user, ChatMessage message);
+	boolean existsByStudentAndMessage(Student student, ChatMessage message);
 
 }

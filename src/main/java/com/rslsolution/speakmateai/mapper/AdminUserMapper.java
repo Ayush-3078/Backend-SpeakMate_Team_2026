@@ -2,6 +2,7 @@ package com.rslsolution.speakmateai.mapper;
 
 import org.springframework.stereotype.Component;
 import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 import com.rslsolution.speakmateai.dto.response.AdminUserResponse;
 
 @Component
@@ -48,11 +49,19 @@ public class AdminUserMapper {
         AdminUserResponse response = mapToListResponse(user);
         
         // Add calculated statistics (triggers lazy loading safely for single user)
-        response.setTotalSpeakingSessions(user.getSpeakingSessions() != null ? user.getSpeakingSessions().size() : 0);
-        response.setTotalGrammarSessions(user.getGrammarHistories() != null ? user.getGrammarHistories().size() : 0);
-        response.setTotalVocabularySaved(user.getVocabularyList() != null ? user.getVocabularyList().size() : 0);
-        response.setTotalLessonsCompleted(user.getLessonProgresses() != null ? user.getLessonProgresses().size() : 0);
-        response.setTotalAchievements(user.getAchievements() != null ? user.getAchievements().size() : 0);
+        if (user instanceof Student student) {
+            response.setTotalSpeakingSessions(student.getSpeakingSessions() != null ? student.getSpeakingSessions().size() : 0);
+            response.setTotalGrammarSessions(student.getGrammarHistories() != null ? student.getGrammarHistories().size() : 0);
+            response.setTotalVocabularySaved(student.getVocabularyList() != null ? student.getVocabularyList().size() : 0);
+            response.setTotalLessonsCompleted(student.getLessonProgresses() != null ? student.getLessonProgresses().size() : 0);
+            response.setTotalAchievements(student.getAchievements() != null ? student.getAchievements().size() : 0);
+        } else {
+            response.setTotalSpeakingSessions(0);
+            response.setTotalGrammarSessions(0);
+            response.setTotalVocabularySaved(0);
+            response.setTotalLessonsCompleted(0);
+            response.setTotalAchievements(0);
+        }
 
         return response;
     }

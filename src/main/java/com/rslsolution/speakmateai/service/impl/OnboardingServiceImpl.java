@@ -8,11 +8,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.rslsolution.speakmateai.dto.request.OnboardingRequest;
 import com.rslsolution.speakmateai.dto.response.OnboardingResponse;
 import com.rslsolution.speakmateai.entity.Onboarding;
-import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 import com.rslsolution.speakmateai.exception.OnboardingNotFoundException;
 import com.rslsolution.speakmateai.exception.UserNotFoundException;
 import com.rslsolution.speakmateai.repository.OnboardingRepository;
-import com.rslsolution.speakmateai.repository.UserRepository;
+import com.rslsolution.speakmateai.repository.StudentRepository;
 import com.rslsolution.speakmateai.service.OnboardingService;
 
 @Service
@@ -20,11 +20,11 @@ import com.rslsolution.speakmateai.service.OnboardingService;
 public class OnboardingServiceImpl implements OnboardingService {
 
 	private final OnboardingRepository onboardingRepository;
-	private final UserRepository userRepository;
+	private final StudentRepository studentRepository;
 
-	public OnboardingServiceImpl(OnboardingRepository onboardingRepository, UserRepository userRepository) {
+	public OnboardingServiceImpl(OnboardingRepository onboardingRepository, StudentRepository studentRepository) {
 		this.onboardingRepository = onboardingRepository;
-		this.userRepository = userRepository;
+		this.studentRepository = studentRepository;
 	}
 
 	@Override
@@ -32,10 +32,10 @@ public class OnboardingServiceImpl implements OnboardingService {
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
 
-		Onboarding onboarding = Onboarding.builder().user(user)
+		Onboarding onboarding = Onboarding.builder().student(user)
 				.englishLevel(request.getEnglishLevel() != null ? request.getEnglishLevel() : "Beginner")
 				.learningGoal(request.getLearningGoal() != null ? request.getLearningGoal() : "Improve English speaking skills")
 				.dailyGoalMinutes(request.getDailyGoalMinutes() != null ? request.getDailyGoalMinutes() : 15)
@@ -56,15 +56,15 @@ public class OnboardingServiceImpl implements OnboardingService {
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
 
 		// For a brand-new user who has not yet completed the onboarding flow,
 		// auto-create a default Onboarding record instead of returning 404.
-		Onboarding onboarding = onboardingRepository.findByUser(user)
+		Onboarding onboarding = onboardingRepository.findByStudent(user)
 				.orElseGet(() -> {
 					Onboarding defaultOnboarding = Onboarding.builder()
-							.user(user)
+							.student(user)
 							.englishLevel("Beginner")
 							.learningGoal("Improve English speaking skills")
 							.dailyGoalMinutes(15)
@@ -85,14 +85,14 @@ public class OnboardingServiceImpl implements OnboardingService {
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
 
 		// Create-then-update pattern: never throw 404 for a missing onboarding record.
-		Onboarding onboarding = onboardingRepository.findByUser(user)
+		Onboarding onboarding = onboardingRepository.findByStudent(user)
 				.orElseGet(() -> {
 					Onboarding defaultOnboarding = Onboarding.builder()
-							.user(user)
+							.student(user)
 							.englishLevel("Beginner")
 							.learningGoal("Improve English speaking skills")
 							.dailyGoalMinutes(15)
@@ -125,10 +125,10 @@ public class OnboardingServiceImpl implements OnboardingService {
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
 
-		Onboarding onboarding = onboardingRepository.findByUser(user)
+		Onboarding onboarding = onboardingRepository.findByStudent(user)
 				.orElseThrow(() -> new OnboardingNotFoundException("Onboarding not found"));
 
 		onboardingRepository.delete(onboarding);
@@ -145,7 +145,7 @@ public class OnboardingServiceImpl implements OnboardingService {
 				.updatedAt(onboarding.getUpdatedAt()).build();
 	}
 
-	private void syncUserOnboarding(User user, OnboardingRequest request) {
+	private void syncUserOnboarding(Student user, OnboardingRequest request) {
 
 		if (request.getNativeLanguage() != null) user.setNativeLanguage(request.getNativeLanguage());
 		if (request.getEnglishLevel() != null) user.setEnglishLevel(request.getEnglishLevel());
@@ -156,6 +156,6 @@ public class OnboardingServiceImpl implements OnboardingService {
 		if (request.getAgeGroup() != null) user.setAgeGroup(request.getAgeGroup());
 		if (request.getInterests() != null) user.setInterests(request.getInterests());
 		if (request.getOnboardingCompleted() != null) user.setOnboardingCompleted(Boolean.TRUE.equals(request.getOnboardingCompleted()));
-		userRepository.save(user);
+		studentRepository.save(user);
 	}
 }

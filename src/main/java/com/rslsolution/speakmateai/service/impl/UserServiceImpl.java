@@ -28,6 +28,7 @@ import com.rslsolution.speakmateai.entity.Onboarding;
 import com.rslsolution.speakmateai.entity.Progress;
 import com.rslsolution.speakmateai.entity.Settings;
 import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 import com.rslsolution.speakmateai.enums.Role;
 import com.rslsolution.speakmateai.exception.DuplicateEmailException;
 import com.rslsolution.speakmateai.exception.InvalidCredentialsException;
@@ -36,6 +37,9 @@ import com.rslsolution.speakmateai.repository.OnboardingRepository;
 import com.rslsolution.speakmateai.repository.ProgressRepository;
 import com.rslsolution.speakmateai.repository.SettingsRepository;
 import com.rslsolution.speakmateai.repository.UserRepository;
+import com.rslsolution.speakmateai.repository.SchoolAdminRepository;
+import com.rslsolution.speakmateai.repository.TeacherRepository;
+import com.rslsolution.speakmateai.repository.StudentRepository;
 import com.rslsolution.speakmateai.repository.VocabularyRepository;
 import com.rslsolution.speakmateai.repository.ChatSessionRepository;
 import com.rslsolution.speakmateai.repository.ChatMessageRepository;
@@ -58,6 +62,15 @@ public class UserServiceImpl implements UserService {
 
 	@Autowired
 	private UserRepository userRepository;
+	
+	@Autowired
+	private SchoolAdminRepository schoolAdminRepository;
+	
+	@Autowired
+	private TeacherRepository teacherRepository;
+	
+	@Autowired
+	private StudentRepository studentRepository;
 
 	@Autowired
 	private ProgressRepository progressRepository;
@@ -185,7 +198,7 @@ public class UserServiceImpl implements UserService {
 
 		validatePasswordStrength(request.getPassword());
 
-		User user = User.builder().firstName(request.getFirstName()).lastName(request.getLastName())
+		Student user = Student.builder().firstName(request.getFirstName()).lastName(request.getLastName())
 				.email(request.getEmail()).password(passwordEncoder.encode(request.getPassword())).role(Role.USER)
 				.active(true).welcomeCompleted(false).onboardingCompleted(false)
 				.authProvider("LOCAL").build();
@@ -209,20 +222,23 @@ public class UserServiceImpl implements UserService {
 	 */
 	private void provisionDefaultUserData(User user) {
 
-		// Default Progress: XP=0, Level=1, all streaks and counters at zero.
-		if (!progressRepository.findByUser(user).isPresent()) {
-			Progress defaultProgress = Progress.builder()
-					.user(user)
-					.xp(0)
-					.level(1)
-					.currentStreak(0)
-					.longestStreak(0)
-					.totalPracticeMinutes(0)
-					.totalSpeakingSessions(0)
-					.totalGrammarChecks(0)
-					.totalVocabularyWords(0)
-					.build();
-			progressRepository.save(defaultProgress);
+		if (user instanceof Student) {
+			Student student = (Student) user;
+			// Default Progress: XP=0, Level=1, all streaks and counters at zero.
+			if (!progressRepository.findByStudent(student).isPresent()) {
+				Progress defaultProgress = Progress.builder()
+						.student(student)
+						.xp(0)
+						.level(1)
+						.currentStreak(0)
+						.longestStreak(0)
+						.totalPracticeMinutes(0)
+						.totalSpeakingSessions(0)
+						.totalGrammarChecks(0)
+						.totalVocabularyWords(0)
+						.build();
+				progressRepository.save(defaultProgress);
+			}
 		}
 
 		// Default Settings: all @Builder.Default values on the entity are used.
@@ -234,37 +250,84 @@ public class UserServiceImpl implements UserService {
 		}
 
 		// Default Onboarding: sensible defaults, marked as not yet completed.
-		if (!onboardingRepository.findByUser(user).isPresent()) {
-			Onboarding defaultOnboarding = Onboarding.builder()
-					.user(user)
-					.englishLevel("Beginner")
-					.learningGoal("Improve English speaking skills")
-					.dailyGoalMinutes(15)
-					.nativeLanguage("English")
-					.preferredLearningTime("Morning")
-					.interests("General")
-					.onboardingCompleted(false)
+		if (user instanceof Student) {
+			Student student = (Student) user;
+			if (!onboardingRepository.findByStudent(student).isPresent()) {
+				Onboarding defaultOnboarding = Onboarding.builder()
+						.student(student)
+						.englishLevel("Beginner")
+						.learningGoal("Improve English speaking skills")
+						.dailyGoalMinutes(15)
+						.nativeLanguage("English")
+						.preferredLearningTime("Morning")
+						.interests("General")
+						.onboardingCompleted(false)
 					.build();
-			onboardingRepository.save(defaultOnboarding);
+				onboardingRepository.save(defaultOnboarding);
+			}
 		}
 	}
 
 	@Override
-	public AuthResponse login(LoginRequest request) {
-
-		User user = userRepository.findByEmail(request.getEmail())
+	public AuthResponse loginSchoolAdmin(LoginRequest request) {
+		User user = schoolAdminRepository.findByEmail(request.getEmail())
 				.orElseThrow(() -> new InvalidCredentialsException("Invalid email"));
 
 		if (!user.isActive()) {
 			throw new InvalidCredentialsException("Inactive account");
 		}
-
 		if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
 			throw new InvalidCredentialsException("Incorrect password");
 		}
+		String token = jwtUtil.generateUserToken(user.getEmail(), "SCHOOL_ADMIN");
+		return AuthResponse.builder().token(token).user(mapToUserResponse(user)).build();
+	}
 
-		String token = jwtUtil.generateToken(user.getEmail());
+	@Override
+	public AuthResponse loginTeacher(LoginRequest request) {
+		User user = teacherRepository.findByEmail(request.getEmail())
+				.orElseThrow(() -> new InvalidCredentialsException("Invalid email"));
 
+		if (!user.isActive()) {
+			throw new InvalidCredentialsException("Inactive account");
+		}
+		if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+			throw new InvalidCredentialsException("Incorrect password");
+		}
+		String token = jwtUtil.generateUserToken(user.getEmail(), "TEACHER");
+		return AuthResponse.builder().token(token).user(mapToUserResponse(user)).build();
+	}
+
+	@Override
+	public AuthResponse loginStudent(LoginRequest request) {
+		User user = studentRepository.findByEmail(request.getEmail())
+				.orElseThrow(() -> new InvalidCredentialsException("Invalid email"));
+
+		if (!user.isActive()) {
+			throw new InvalidCredentialsException("Inactive account");
+		}
+		if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+			throw new InvalidCredentialsException("Incorrect password");
+		}
+		String token = jwtUtil.generateUserToken(user.getEmail(), "STUDENT");
+		return AuthResponse.builder().token(token).user(mapToUserResponse(user)).build();
+	}
+
+	@Override
+	public AuthResponse loginUser(LoginRequest request) {
+		User user = userRepository.findByEmail(request.getEmail())
+				.orElseThrow(() -> new InvalidCredentialsException("Invalid email"));
+
+		if (user.getRole() != Role.USER) {
+			throw new InvalidCredentialsException("This endpoint is for individual users only.");
+		}
+		if (!user.isActive()) {
+			throw new InvalidCredentialsException("Inactive account");
+		}
+		if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+			throw new InvalidCredentialsException("Incorrect password");
+		}
+		String token = jwtUtil.generateUserToken(user.getEmail(), "USER");
 		return AuthResponse.builder().token(token).user(mapToUserResponse(user)).build();
 	}
 

@@ -13,7 +13,7 @@ import com.rslsolution.speakmateai.service.UserService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/api/auth")
 @CrossOrigin(origins = "*")
 public class TenantAuthController {
 
@@ -23,8 +23,23 @@ public class TenantAuthController {
 		this.userService = userService;
 	}
 
+	@PostMapping("/school-admin/login")
+	public AuthResponse loginSchoolAdmin(@Valid @RequestBody LoginRequest request) {
+		return userService.loginSchoolAdmin(request);
+	}
+
+	@PostMapping("/teacher/login")
+	public AuthResponse loginTeacher(@Valid @RequestBody LoginRequest request) {
+		return userService.loginTeacher(request);
+	}
+
 	@PostMapping("/login")
-	public AuthResponse login(@Valid @RequestBody LoginRequest request) {
-		return userService.login(request);
+	public AuthResponse loginUser(@Valid @RequestBody LoginRequest request) {
+		return userService.loginUser(request);
+	}
+
+	@PostMapping("/student/login")
+	public AuthResponse loginStudent(@Valid @RequestBody LoginRequest request) {
+		return userService.loginStudent(request);
 	}
 }

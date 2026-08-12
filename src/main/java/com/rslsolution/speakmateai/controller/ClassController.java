@@ -19,7 +19,7 @@ import com.rslsolution.speakmateai.dto.response.ClassRoomResponse;
 import com.rslsolution.speakmateai.service.ClassRoomService;
 
 @RestController
-@RequestMapping("/api/v1/school/classes")
+@RequestMapping("/api/school/classes")
 public class ClassController {
 
 	private final ClassRoomService classRoomService;

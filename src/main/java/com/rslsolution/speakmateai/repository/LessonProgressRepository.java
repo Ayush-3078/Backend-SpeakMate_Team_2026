@@ -8,18 +8,18 @@ import org.springframework.stereotype.Repository;
 
 import com.rslsolution.speakmateai.entity.Lesson;
 import com.rslsolution.speakmateai.entity.LessonProgress;
-import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 
 @Repository
 public interface LessonProgressRepository extends JpaRepository<LessonProgress, Long> {
 
-	Optional<LessonProgress> findByUserAndLesson(User user, Lesson lesson);
+	Optional<LessonProgress> findByStudentAndLesson(Student student, Lesson lesson);
 
-	List<LessonProgress> findByUser(User user);
+	List<LessonProgress> findByStudent(Student student);
 
-	List<LessonProgress> findByUserAndCompleted(User user, Boolean completed);
+	List<LessonProgress> findByStudentAndCompleted(Student student, Boolean completed);
 
-	List<LessonProgress> findByUserOrderByLastOpenedAtDesc(User user);
+	List<LessonProgress> findByStudentOrderByLastOpenedAtDesc(Student student);
 
-	boolean existsByUserAndLesson(User user, Lesson lesson);
+	boolean existsByStudentAndLesson(Student student, Lesson lesson);
 }

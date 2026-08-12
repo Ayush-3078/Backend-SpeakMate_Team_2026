@@ -20,13 +20,13 @@ import com.rslsolution.speakmateai.dto.response.LessonResponse;
 import com.rslsolution.speakmateai.entity.Lesson;
 import com.rslsolution.speakmateai.entity.LessonProgress;
 import com.rslsolution.speakmateai.entity.Progress;
-import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 import com.rslsolution.speakmateai.exception.LessonNotFoundException;
 import com.rslsolution.speakmateai.exception.UserNotFoundException;
 import com.rslsolution.speakmateai.repository.LessonProgressRepository;
 import com.rslsolution.speakmateai.repository.LessonRepository;
 import com.rslsolution.speakmateai.repository.ProgressRepository;
-import com.rslsolution.speakmateai.repository.UserRepository;
+import com.rslsolution.speakmateai.repository.StudentRepository;
 import com.rslsolution.speakmateai.service.LessonService;
 import com.rslsolution.speakmateai.service.NotificationService;
 
@@ -48,30 +48,30 @@ public class LessonServiceImpl implements LessonService {
 
 	private final LessonRepository lessonRepository;
 	private final LessonProgressRepository progressRepository;
-	private final UserRepository userRepository;
+	private final StudentRepository studentRepository;
 	private final ProgressRepository userProgressRepository;
 	private final NotificationService notificationService;
 
 	public LessonServiceImpl(LessonRepository lessonRepository,
 			LessonProgressRepository progressRepository,
-			UserRepository userRepository,
+			StudentRepository studentRepository,
 			ProgressRepository userProgressRepository,
 			NotificationService notificationService) {
 		this.lessonRepository = lessonRepository;
 		this.progressRepository = progressRepository;
-		this.userRepository = userRepository;
+		this.studentRepository = studentRepository;
 		this.userProgressRepository = userProgressRepository;
 		this.notificationService = notificationService;
 	}
 
 	// ── Helpers ───────────────────────────────────────────────────────
 
-	private User currentUser() {
+	private Student currentUser() {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 		if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
 			return null;
 		}
-		return userRepository.findByEmail(auth.getName())
+		return studentRepository.findByEmail(auth.getName())
 				.orElse(null);
 	}
 
@@ -118,9 +118,9 @@ public class LessonServiceImpl implements LessonService {
 		return b.build();
 	}
 
-	private LessonResponse mapWithUserProgress(Lesson lesson, User user) {
+	private LessonResponse mapWithUserProgress(Lesson lesson, Student user) {
 		if (user == null) return mapToResponse(lesson);
-		Optional<LessonProgress> prog = progressRepository.findByUserAndLesson(user, lesson);
+		Optional<LessonProgress> prog = progressRepository.findByStudentAndLesson(user, lesson);
 		return mapToResponse(lesson, prog.orElse(null));
 	}
 
@@ -174,7 +174,7 @@ public class LessonServiceImpl implements LessonService {
 
 	@Override
 	public List<LessonResponse> getAllLessons() {
-		User user = currentUser();
+		Student user = currentUser();
 		return lessonRepository.findAll().stream()
 				.map(l -> mapWithUserProgress(l, user))
 				.toList();
@@ -184,13 +184,13 @@ public class LessonServiceImpl implements LessonService {
 	public LessonResponse getLessonById(Long id) {
 		Lesson lesson = lessonRepository.findById(id)
 				.orElseThrow(() -> new LessonNotFoundException("Lesson not found"));
-		User user = currentUser();
+		Student user = currentUser();
 		return mapWithUserProgress(lesson, user);
 	}
 
 	@Override
 	public List<LessonResponse> getLessonsByCategory(String category) {
-		User user = currentUser();
+		Student user = currentUser();
 		return lessonRepository.findByCategory(category).stream()
 				.map(l -> mapWithUserProgress(l, user))
 				.toList();
@@ -198,7 +198,7 @@ public class LessonServiceImpl implements LessonService {
 
 	@Override
 	public List<LessonResponse> getLessonsByLevel(String level) {
-		User user = currentUser();
+		Student user = currentUser();
 		return lessonRepository.findByLevel(level).stream()
 				.map(l -> mapWithUserProgress(l, user))
 				.toList();
@@ -206,7 +206,7 @@ public class LessonServiceImpl implements LessonService {
 
 	@Override
 	public List<LessonResponse> getLessonsByCategoryAndLevel(String category, String level) {
-		User user = currentUser();
+		Student user = currentUser();
 		return lessonRepository.findByCategoryAndLevel(category, level).stream()
 				.map(l -> mapWithUserProgress(l, user))
 				.toList();
@@ -214,7 +214,7 @@ public class LessonServiceImpl implements LessonService {
 
 	@Override
 	public List<LessonResponse> getActiveLessons() {
-		User user = currentUser();
+		Student user = currentUser();
 		return lessonRepository.findByActiveTrue().stream()
 				.map(l -> mapWithUserProgress(l, user))
 				.toList();
@@ -265,7 +265,7 @@ public class LessonServiceImpl implements LessonService {
 
 	@Override
 	public List<CategoryResponse> getCategories() {
-		User user = currentUser();
+		Student user = currentUser();
 		List<Lesson> allActive = lessonRepository.findByActiveTrue();
 
 		// group by category
@@ -275,7 +275,7 @@ public class LessonServiceImpl implements LessonService {
 		// user-completed counts
 		Map<String, Long> completedByCategory = user == null
 				? Map.of()
-				: progressRepository.findByUserAndCompleted(user, true).stream()
+				: progressRepository.findByStudentAndCompleted(user, true).stream()
 						.collect(Collectors.groupingBy(p -> p.getLesson().getCategory(), Collectors.counting()));
 
 		// total XP per category
@@ -302,7 +302,7 @@ public class LessonServiceImpl implements LessonService {
 
 	@Override
 	public List<LessonResponse> getRecommended() {
-		User user = currentUser();
+		Student user = currentUser();
 		// Return popular or featured lessons not yet completed
 		List<Lesson> pool = lessonRepository.findByActiveTrue().stream()
 				.filter(l -> Boolean.TRUE.equals(l.getPopular()) || Boolean.TRUE.equals(l.getFeatured()))
@@ -312,16 +312,16 @@ public class LessonServiceImpl implements LessonService {
 			// fallback: first 10 active
 			pool = lessonRepository.findByActiveTrue().stream().limit(10).toList();
 		}
-		final User finalUser = user;
+		final Student finalUser = user;
 		return pool.stream().map(l -> mapWithUserProgress(l, finalUser)).toList();
 	}
 
 	@Override
 	public List<LessonResponse> getContinueLearning() {
-		User user = currentUser();
+		Student user = currentUser();
 		if (user == null) return List.of();
 		// lessons started but not completed, ordered by last opened
-		return progressRepository.findByUserOrderByLastOpenedAtDesc(user).stream()
+		return progressRepository.findByStudentOrderByLastOpenedAtDesc(user).stream()
 				.filter(p -> !Boolean.TRUE.equals(p.getCompleted()) && p.getProgressPercent() > 0)
 				.map(p -> mapToResponse(p.getLesson(), p))
 				.limit(5)
@@ -330,7 +330,7 @@ public class LessonServiceImpl implements LessonService {
 
 	@Override
 	public List<LessonResponse> search(String query, String category, String difficulty) {
-		User user = currentUser();
+		Student user = currentUser();
 		List<Lesson> base = lessonRepository.findByActiveTrue();
 
 		if (query != null && !query.isBlank()) {
@@ -348,15 +348,15 @@ public class LessonServiceImpl implements LessonService {
 			base = base.stream().filter(l -> l.getLevel().equalsIgnoreCase(difficulty)).toList();
 		}
 
-		final User finalUser = user;
+		final Student finalUser = user;
 		return base.stream().map(l -> mapWithUserProgress(l, finalUser)).toList();
 	}
 
 	@Override
 	public List<LessonResponse> getRecent() {
-		User user = currentUser();
+		Student user = currentUser();
 		if (user == null) return List.of();
-		return progressRepository.findByUserOrderByLastOpenedAtDesc(user).stream()
+		return progressRepository.findByStudentOrderByLastOpenedAtDesc(user).stream()
 				.map(p -> mapToResponse(p.getLesson(), p))
 				.limit(10)
 				.toList();
@@ -364,9 +364,9 @@ public class LessonServiceImpl implements LessonService {
 
 	@Override
 	public List<LessonResponse> getCompleted() {
-		User user = currentUser();
+		Student user = currentUser();
 		if (user == null) return List.of();
-		return progressRepository.findByUserAndCompleted(user, true).stream()
+		return progressRepository.findByStudentAndCompleted(user, true).stream()
 				.map(p -> mapToResponse(p.getLesson(), p))
 				.toList();
 	}
@@ -375,12 +375,12 @@ public class LessonServiceImpl implements LessonService {
 	public LessonResponse startLesson(Long id) {
 		Lesson lesson = lessonRepository.findById(id)
 				.orElseThrow(() -> new LessonNotFoundException("Lesson not found"));
-		User user = currentUser();
+		Student user = currentUser();
 		if (user == null) return mapToResponse(lesson);
 
-		LessonProgress progress = progressRepository.findByUserAndLesson(user, lesson)
+		LessonProgress progress = progressRepository.findByStudentAndLesson(user, lesson)
 				.orElseGet(() -> LessonProgress.builder()
-						.user(user)
+						.student(user)
 						.lesson(lesson)
 						.progressPercent(0)
 						.completed(false)
@@ -395,15 +395,15 @@ public class LessonServiceImpl implements LessonService {
 
 	@Override
 	public LessonProgressResponse updateProgress(LessonProgressRequest request) {
-		User user = currentUser();
+		Student user = currentUser();
 		if (user == null) throw new UserNotFoundException("Not authenticated");
 
 		Lesson lesson = lessonRepository.findById(request.getLessonId())
 				.orElseThrow(() -> new LessonNotFoundException("Lesson not found"));
 
-		LessonProgress progress = progressRepository.findByUserAndLesson(user, lesson)
+		LessonProgress progress = progressRepository.findByStudentAndLesson(user, lesson)
 				.orElseGet(() -> LessonProgress.builder()
-						.user(user)
+						.student(user)
 						.lesson(lesson)
 						.progressPercent(0)
 						.completed(false)
@@ -425,15 +425,15 @@ public class LessonServiceImpl implements LessonService {
 
 	@Override
 	public LessonProgressResponse completeLesson(Long id) {
-		User user = currentUser();
+		Student user = currentUser();
 		if (user == null) throw new UserNotFoundException("Not authenticated");
 
 		Lesson lesson = lessonRepository.findById(id)
 				.orElseThrow(() -> new LessonNotFoundException("Lesson not found"));
 
-		LessonProgress progress = progressRepository.findByUserAndLesson(user, lesson)
+		LessonProgress progress = progressRepository.findByStudentAndLesson(user, lesson)
 				.orElseGet(() -> LessonProgress.builder()
-						.user(user)
+						.student(user)
 						.lesson(lesson)
 						.timeSpentMinutes(0)
 						.build());
@@ -447,7 +447,7 @@ public class LessonServiceImpl implements LessonService {
 			progress.setXpEarned(xp);
 
 			// ── Credit XP to user Progress ────────────────────────────────
-			userProgressRepository.findByUser(user).ifPresent(up -> {
+			userProgressRepository.findByStudent(user).ifPresent(up -> {
 				up.setXp((up.getXp() != null ? up.getXp() : 0) + xp);
 				// Level up every 500 XP
 				int totalXp = up.getXp();

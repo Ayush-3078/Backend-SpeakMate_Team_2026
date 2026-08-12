@@ -8,11 +8,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.rslsolution.speakmateai.dto.request.ProgressRequest;
 import com.rslsolution.speakmateai.dto.response.ProgressResponse;
 import com.rslsolution.speakmateai.entity.Progress;
-import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 import com.rslsolution.speakmateai.exception.ProgressNotFoundException;
 import com.rslsolution.speakmateai.exception.UserNotFoundException;
 import com.rslsolution.speakmateai.repository.ProgressRepository;
-import com.rslsolution.speakmateai.repository.UserRepository;
+import com.rslsolution.speakmateai.repository.StudentRepository;
 import com.rslsolution.speakmateai.service.ProgressService;
 
 @Service
@@ -20,11 +20,11 @@ import com.rslsolution.speakmateai.service.ProgressService;
 public class ProgressServiceImpl implements ProgressService {
 
 	private final ProgressRepository progressRepository;
-	private final UserRepository userRepository;
+	private final StudentRepository studentRepository;
 
-	public ProgressServiceImpl(ProgressRepository progressRepository, UserRepository userRepository) {
+	public ProgressServiceImpl(ProgressRepository progressRepository, StudentRepository studentRepository) {
 		this.progressRepository = progressRepository;
-		this.userRepository = userRepository;
+		this.studentRepository = studentRepository;
 	}
 
 	@Override
@@ -32,10 +32,10 @@ public class ProgressServiceImpl implements ProgressService {
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
 
-		Progress progress = Progress.builder().user(user).xp(request.getXp()).level(request.getLevel())
+		Progress progress = Progress.builder().student(user).xp(request.getXp()).level(request.getLevel())
 				.currentStreak(request.getCurrentStreak()).longestStreak(request.getLongestStreak())
 				.totalPracticeMinutes(request.getTotalPracticeMinutes())
 				.totalSpeakingSessions(request.getTotalSpeakingSessions())
@@ -59,13 +59,13 @@ public class ProgressServiceImpl implements ProgressService {
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
 
-		Progress progress = progressRepository.findByUser(user)
+		Progress progress = progressRepository.findByStudent(user)
 				.orElseGet(() -> {
 					Progress newProgress = Progress.builder()
-							.user(user)
+							.student(user)
 							.xp(0)
 							.level(1)
 							.currentStreak(0)
@@ -92,13 +92,13 @@ public class ProgressServiceImpl implements ProgressService {
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
 
-		Progress progress = progressRepository.findByUser(user)
+		Progress progress = progressRepository.findByStudent(user)
 				.orElseGet(() -> {
 					Progress newProgress = Progress.builder()
-							.user(user)
+							.student(user)
 							.xp(0)
 							.level(1)
 							.currentStreak(0)
@@ -137,10 +137,10 @@ public class ProgressServiceImpl implements ProgressService {
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-		User user = userRepository.findByEmail(authentication.getName())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
+		Student user = studentRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new UserNotFoundException("Student not found"));
 
-		Progress progress = progressRepository.findByUser(user)
+		Progress progress = progressRepository.findByStudent(user)
 				.orElseThrow(() -> new ProgressNotFoundException("Progress not found"));
 
 		progressRepository.delete(progress);

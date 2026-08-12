@@ -10,6 +10,7 @@ import com.rslsolution.speakmateai.dto.request.ProfileRequest;
 import com.rslsolution.speakmateai.dto.response.ProfileResponse;
 import com.rslsolution.speakmateai.entity.Progress;
 import com.rslsolution.speakmateai.entity.User;
+import com.rslsolution.speakmateai.entity.Student;
 import com.rslsolution.speakmateai.exception.DuplicateEmailException;
 import com.rslsolution.speakmateai.exception.UserNotFoundException;
 import com.rslsolution.speakmateai.repository.ProgressRepository;
@@ -29,7 +30,10 @@ public class ProfileServiceImpl implements ProfileService {
 	}
 
 	private ProfileResponse mapToProfileResponse(User user) {
-		Progress progress = progressRepository.findByUser(user).orElse(null);
+		Progress progress = null;
+		if (user instanceof Student) {
+			progress = progressRepository.findByStudent((Student) user).orElse(null);
+		}
 		int xp = progress != null && progress.getXp() != null ? progress.getXp() : 0;
 		int calculatedLevel = (xp / 500) + 1;
 		if (progress != null && (progress.getLevel() == null || progress.getLevel() != calculatedLevel)) {
