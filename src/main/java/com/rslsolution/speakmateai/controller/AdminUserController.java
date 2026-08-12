@@ -177,4 +177,3 @@ public class AdminUserController {
         return ResponseEntity.ok(ApiResponse.success("User details updated successfully", adminUserService.updateUserDetails(userId, request)));
     }
 }
-

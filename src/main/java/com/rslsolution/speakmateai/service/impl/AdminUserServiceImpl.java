@@ -43,6 +43,10 @@ import com.rslsolution.speakmateai.enums.Role;
 import com.rslsolution.speakmateai.mapper.AdminUserMapper;
 import com.rslsolution.speakmateai.repository.UserRepository;
 import com.rslsolution.speakmateai.repository.UserSpecification;
+import com.rslsolution.speakmateai.repository.ProgressRepository;
+import com.rslsolution.speakmateai.repository.SpeakingSessionRepository;
+import com.rslsolution.speakmateai.repository.UserSubscriptionRepository;
+import com.rslsolution.speakmateai.enums.SubscriptionStatus;
 import com.rslsolution.speakmateai.service.AdminUserService;
 
 @Service
@@ -52,28 +56,37 @@ public class AdminUserServiceImpl implements AdminUserService {
     private final UserRepository userRepository;
     private final AdminUserMapper adminUserMapper;
     private final PasswordEncoder passwordEncoder;
+    private final ProgressRepository progressRepository;
+    private final SpeakingSessionRepository speakingSessionRepository;
+    private final UserSubscriptionRepository userSubscriptionRepository;
 
-    public AdminUserServiceImpl(UserRepository userRepository, AdminUserMapper adminUserMapper, PasswordEncoder passwordEncoder) {
+    public AdminUserServiceImpl(UserRepository userRepository, AdminUserMapper adminUserMapper,
+            PasswordEncoder passwordEncoder,
+            ProgressRepository progressRepository, SpeakingSessionRepository speakingSessionRepository,
+            UserSubscriptionRepository userSubscriptionRepository) {
         this.userRepository = userRepository;
         this.adminUserMapper = adminUserMapper;
         this.passwordEncoder = passwordEncoder;
+        this.progressRepository = progressRepository;
+        this.speakingSessionRepository = speakingSessionRepository;
+        this.userSubscriptionRepository = userSubscriptionRepository;
     }
 
     @Override
     public Page<AdminUserResponse> getAllUsers(int page, int size, String sortBy, String sortDir,
-                                               String keyword, Boolean status, String englishLevel,
-                                               String nativeLanguage, String purpose,
-                                               LocalDateTime registrationFrom, LocalDateTime registrationTo) {
-        
+            String keyword, Boolean status, String englishLevel,
+            String nativeLanguage, String purpose,
+            LocalDateTime registrationFrom, LocalDateTime registrationTo) {
+
         Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
-        
+
         Pageable pageable = PageRequest.of(page, size, sort);
-        
-        Specification<User> spec = UserSpecification.filterUsers(keyword, status, englishLevel, 
-                                                                 nativeLanguage, purpose, 
-                                                                 registrationFrom, registrationTo);
-        
+
+        Specification<User> spec = UserSpecification.filterUsers(keyword, status, englishLevel,
+                nativeLanguage, purpose,
+                registrationFrom, registrationTo);
+
         return userRepository.findAll(spec, pageable).map(adminUserMapper::mapToListResponse);
     }
 
@@ -82,7 +95,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new IllegalArgumentException("User with this email already exists");
         }
-        
+
         // Creating a standard user for now (or a Student if we need to).
         // Since AdminUserCreateRequest is generic, we just create User.
         User user = new User();
@@ -92,12 +105,12 @@ public class AdminUserServiceImpl implements AdminUserService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(Role.USER);
         user.setActive(request.isActive());
-        
+
         user.setEnglishLevel(request.getEnglishLevel());
         user.setNativeLanguage(request.getNativeLanguage());
         user.setLearningGoal(request.getLearningGoal());
         user.setDailyGoalMinutes(request.getDailyGoalMinutes());
-        
+
         User savedUser = userRepository.save(user);
         return adminUserMapper.mapToDetailResponse(savedUser);
     }
@@ -164,10 +177,11 @@ public class AdminUserServiceImpl implements AdminUserService {
     public String exportUsersCsv() {
         List<User> users = userRepository.findAll();
         StringBuilder csv = new StringBuilder();
-        
+
         // Headers
-        csv.append("ID,First Name,Last Name,Email,Role,Status,Native Language,English Level,Learning Goal,Created At\n");
-        
+        csv.append(
+                "ID,First Name,Last Name,Email,Role,Status,Native Language,English Level,Learning Goal,Created At\n");
+
         for (User user : users) {
             csv.append(user.getId()).append(",");
             csv.append(escapeCsv(user.getFirstName())).append(",");
@@ -180,12 +194,13 @@ public class AdminUserServiceImpl implements AdminUserService {
             csv.append(escapeCsv(user.getLearningGoal())).append(",");
             csv.append(user.getCreatedAt()).append("\n");
         }
-        
+
         return csv.toString();
     }
 
     private String escapeCsv(String data) {
-        if (data == null) return "";
+        if (data == null)
+            return "";
         String escapedData = data.replaceAll("\\R", " ");
         if (data.contains(",") || data.contains("\"") || data.contains("'")) {
             data = data.replace("\"", "\"\"");
@@ -199,15 +214,19 @@ public class AdminUserServiceImpl implements AdminUserService {
         long totalUsers = userRepository.count();
         long activeUsers = userRepository.countByActiveTrue();
         long inactiveUsers = userRepository.countByActiveFalse();
-        
+
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startOfDay = now.with(LocalTime.MIN);
         LocalDateTime startOfWeek = now.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).with(LocalTime.MIN);
         LocalDateTime startOfMonth = now.with(TemporalAdjusters.firstDayOfMonth()).with(LocalTime.MIN);
-        
+
         long todayRegistrations = userRepository.countByCreatedAtBetween(startOfDay, now);
         long thisWeekRegistrations = userRepository.countByCreatedAtBetween(startOfWeek, now);
         long thisMonthRegistrations = userRepository.countByCreatedAtBetween(startOfMonth, now);
+
+        long premiumUsers = userSubscriptionRepository.countBySubscriptionStatus(SubscriptionStatus.ACTIVE);
+        double averageLearningTimeMinutes = progressRepository.getAveragePracticeMinutes();
+        double averageSpeakingScore = speakingSessionRepository.getAverageSpeakingScore();
 
         return UserStatisticsResponse.builder()
                 .totalUsers(totalUsers)
@@ -216,9 +235,9 @@ public class AdminUserServiceImpl implements AdminUserService {
                 .todayRegistrations(todayRegistrations)
                 .thisWeekRegistrations(thisWeekRegistrations)
                 .thisMonthRegistrations(thisMonthRegistrations)
-                .premiumUsers(0) // Feature not yet implemented
-                .averageLearningTimeMinutes(0.0) // Mock until complex analytics implemented
-                .averageSpeakingScore(0.0) // Mock until complex analytics implemented
+                .premiumUsers(premiumUsers)
+                .averageLearningTimeMinutes(Math.round(averageLearningTimeMinutes * 10.0) / 10.0)
+                .averageSpeakingScore(Math.round(averageSpeakingScore * 10.0) / 10.0)
                 .build();
     }
 
@@ -226,52 +245,59 @@ public class AdminUserServiceImpl implements AdminUserService {
     public UserDetailsResponse getUserDetails(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
-                
+
         Progress progress = null;
         if (user instanceof Student student) {
-            progress = student.getProgressList() != null && !student.getProgressList().isEmpty() 
-                ? student.getProgressList().get(0) : null;
+            progress = student.getProgressList() != null && !student.getProgressList().isEmpty()
+                    ? student.getProgressList().get(0)
+                    : null;
         }
-            
+
         return UserDetailsResponse.builder()
-            .id(user.getId())
-            .firstName(user.getFirstName())
-            .lastName(user.getLastName())
-            .email(user.getEmail())
-            .phone(user.getPhone())
-            .accountType(user.getUserType() != null ? user.getUserType().name() : "STANDARD")
-            .englishLevel(user.getEnglishLevel())
-            .status(user.isActive() ? "Active" : "Inactive")
-            .registrationDate(user.getCreatedAt())
-            .lastActive(user.getUpdatedAt())
-            .xp(progress != null && progress.getXp() != null ? progress.getXp() : 0)
-            .currentStreak(progress != null && progress.getCurrentStreak() != null ? progress.getCurrentStreak() : 0)
-            .build();
+                .id(user.getId())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .accountType(user.getUserType() != null ? user.getUserType().name() : "STANDARD")
+                .englishLevel(user.getEnglishLevel())
+                .status(user.isActive() ? "Active" : "Inactive")
+                .registrationDate(user.getCreatedAt())
+                .lastActive(user.getUpdatedAt())
+                .xp(progress != null && progress.getXp() != null ? progress.getXp() : 0)
+                .currentStreak(
+                        progress != null && progress.getCurrentStreak() != null ? progress.getCurrentStreak() : 0)
+                .build();
     }
 
     @Override
     public UserLearningStatisticsResponse getUserLearningStatistics(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
-                
-        int totalSpeaking = 0;
-        int aiChats = 0;
+
+        Progress progress = user.getProgress();
+
+        int totalSpeaking = user.getSpeakingSessions() != null ? user.getSpeakingSessions().size() : 0;
+        int aiChats = user.getChatSessions() != null ? user.getChatSessions().size() : 0;
+
         int completedLessons = 0;
         double practiceHours = 0;
         int currentStreak = 0;
         int xp = 0;
 
         if (user instanceof Student student) {
-            Progress progress = student.getProgressList() != null && !student.getProgressList().isEmpty() 
-                ? student.getProgressList().get(0) : null;
-                
+            Progress progress = student.getProgressList() != null && !student.getProgressList().isEmpty()
+                    ? student.getProgressList().get(0)
+                    : null;
+
             totalSpeaking = student.getSpeakingSessions() != null ? student.getSpeakingSessions().size() : 0;
             aiChats = student.getChatSessions() != null ? student.getChatSessions().size() : 0;
-            
+
             if (student.getLessonProgresses() != null) {
-                completedLessons = (int) student.getLessonProgresses().stream().filter(lp -> lp.getCompleted() != null && lp.getCompleted()).count();
+                completedLessons = (int) student.getLessonProgresses().stream()
+                        .filter(lp -> lp.getCompleted() != null && lp.getCompleted()).count();
             }
-            
+
             if (progress != null) {
                 if (progress.getTotalPracticeMinutes() != null) {
                     practiceHours = progress.getTotalPracticeMinutes() / 60.0;
@@ -282,20 +308,20 @@ public class AdminUserServiceImpl implements AdminUserService {
         }
 
         return UserLearningStatisticsResponse.builder()
-            .practiceHours(Math.round(practiceHours * 10.0) / 10.0)
-            .speakingSessions(totalSpeaking)
-            .aiChats(aiChats)
-            .completedLessons(completedLessons)
-            .currentStreak(currentStreak)
-            .xp(xp)
-            .build();
+                .practiceHours(Math.round(practiceHours * 10.0) / 10.0)
+                .speakingSessions(totalSpeaking)
+                .aiChats(aiChats)
+                .completedLessons(completedLessons)
+                .currentStreak(currentStreak)
+                .xp(xp)
+                .build();
     }
 
     @Override
     public LanguageScoreResponse getLanguageScores(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
-        
+
         double avgGrammar = 0;
         double avgFluency = 0;
         double avgPronunciation = 0;
@@ -304,69 +330,69 @@ public class AdminUserServiceImpl implements AdminUserService {
         if (user instanceof Student student) {
             if (student.getGrammarHistories() != null && !student.getGrammarHistories().isEmpty()) {
                 avgGrammar = student.getGrammarHistories().stream()
-                    .filter(g -> g.getGrammarScore() != null)
-                    .mapToDouble(GrammarHistory::getGrammarScore)
-                    .average().orElse(0.0);
+                        .filter(g -> g.getGrammarScore() != null)
+                        .mapToDouble(GrammarHistory::getGrammarScore)
+                        .average().orElse(0.0);
             }
-            
+
             if (student.getSpeakingSessions() != null && !student.getSpeakingSessions().isEmpty()) {
                 avgFluency = student.getSpeakingSessions().stream()
-                    .filter(s -> s.getFluencyScore() != null)
-                    .mapToDouble(SpeakingSession::getFluencyScore)
-                    .average().orElse(0.0);
+                        .filter(s -> s.getFluencyScore() != null)
+                        .mapToDouble(SpeakingSession::getFluencyScore)
+                        .average().orElse(0.0);
                 avgPronunciation = student.getSpeakingSessions().stream()
-                    .filter(s -> s.getPronunciationScore() != null)
-                    .mapToDouble(SpeakingSession::getPronunciationScore)
-                    .average().orElse(0.0);
+                        .filter(s -> s.getPronunciationScore() != null)
+                        .mapToDouble(SpeakingSession::getPronunciationScore)
+                        .average().orElse(0.0);
             }
         }
 
         return LanguageScoreResponse.builder()
-            .grammarScore(Math.round(avgGrammar * 10.0) / 10.0)
-            .vocabularyScore(Math.round(avgVocabulary * 10.0) / 10.0)
-            .fluencyScore(Math.round(avgFluency * 10.0) / 10.0)
-            .pronunciationScore(Math.round(avgPronunciation * 10.0) / 10.0)
-            .build();
+                .grammarScore(Math.round(avgGrammar * 10.0) / 10.0)
+                .vocabularyScore(Math.round(avgVocabulary * 10.0) / 10.0)
+                .fluencyScore(Math.round(avgFluency * 10.0) / 10.0)
+                .pronunciationScore(Math.round(avgPronunciation * 10.0) / 10.0)
+                .build();
     }
 
     @Override
     public Page<UserActivityResponse> getUserActivities(Long userId, int page, int size) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
-                
+
         List<UserActivityResponse> allActivities = new ArrayList<>();
-        
+
         if (user instanceof Student student) {
             if (student.getLessonProgresses() != null) {
                 for (LessonProgress lp : student.getLessonProgresses()) {
                     allActivities.add(UserActivityResponse.builder()
-                        .activityType("LESSON")
-                        .title(lp.getLesson() != null ? lp.getLesson().getTitle() : "Unknown Lesson")
-                        .description("Lesson Practice")
-                        .activityDate(lp.getUpdatedAt() != null ? lp.getUpdatedAt() : lp.getCreatedAt())
-                        .status(lp.getCompleted() != null && lp.getCompleted() ? "COMPLETED" : "IN_PROGRESS")
-                        .build());
+                            .activityType("LESSON")
+                            .title(lp.getLesson() != null ? lp.getLesson().getTitle() : "Unknown Lesson")
+                            .description("Lesson Practice")
+                            .activityDate(lp.getUpdatedAt() != null ? lp.getUpdatedAt() : lp.getCreatedAt())
+                            .status(lp.getCompleted() != null && lp.getCompleted() ? "COMPLETED" : "IN_PROGRESS")
+                            .build());
                 }
             }
-            
+
             if (student.getSpeakingSessions() != null) {
                 for (SpeakingSession ss : student.getSpeakingSessions()) {
                     allActivities.add(UserActivityResponse.builder()
-                        .activityType("SPEAKING")
-                        .title(ss.getTopic())
-                        .description("Speaking Practice")
-                        .activityDate(ss.getCreatedAt())
-                        .status("COMPLETED")
-                        .build());
+                            .activityType("SPEAKING")
+                            .title(ss.getTopic())
+                            .description("Speaking Practice")
+                            .activityDate(ss.getCreatedAt())
+                            .status("COMPLETED")
+                            .build());
                 }
             }
         }
-        
+
         allActivities.sort(Comparator.comparing(UserActivityResponse::getActivityDate).reversed());
-        
+
         int start = Math.min(page * size, allActivities.size());
         int end = Math.min((page + 1) * size, allActivities.size());
-        
+
         return new PageImpl<>(allActivities.subList(start, end), PageRequest.of(page, size), allActivities.size());
     }
 
@@ -374,7 +400,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     public UserProgressResponse getUserProgress(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
-                
+
         int lessonsCompleted = 0;
         int testsCompleted = 0;
         double completionPercent = 0.0;
@@ -382,121 +408,133 @@ public class AdminUserServiceImpl implements AdminUserService {
 
         if (user instanceof Student student) {
             if (student.getLessonProgresses() != null && !student.getLessonProgresses().isEmpty()) {
-                lessonsCompleted = (int) student.getLessonProgresses().stream().filter(lp -> lp.getCompleted() != null && lp.getCompleted()).count();
-                completionPercent = student.getLessonProgresses().stream().filter(lp -> lp.getProgressPercent() != null).mapToDouble(LessonProgress::getProgressPercent).average().orElse(0.0);
+                lessonsCompleted = (int) student.getLessonProgresses().stream()
+                        .filter(lp -> lp.getCompleted() != null && lp.getCompleted()).count();
+                completionPercent = student.getLessonProgresses().stream().filter(lp -> lp.getProgressPercent() != null)
+                        .mapToDouble(LessonProgress::getProgressPercent).average().orElse(0.0);
             }
-            
-            Progress progress = student.getProgressList() != null && !student.getProgressList().isEmpty() 
-                ? student.getProgressList().get(0) : null;
-                
-            totalLearningHours = progress != null && progress.getTotalPracticeMinutes() != null ? progress.getTotalPracticeMinutes() / 60 : 0;
+
+            Progress progress = student.getProgressList() != null && !student.getProgressList().isEmpty()
+                    ? student.getProgressList().get(0)
+                    : null;
+
+            totalLearningHours = progress != null && progress.getTotalPracticeMinutes() != null
+                    ? progress.getTotalPracticeMinutes() / 60
+                    : 0;
         }
 
         return UserProgressResponse.builder()
-            .overallProgress((int) completionPercent)
-            .lessonsCompleted(lessonsCompleted)
-            .testsCompleted(testsCompleted)
-            .totalLearningHours(totalLearningHours)
-            .completionPercentage(Math.round(completionPercent * 10.0) / 10.0)
-            .weeklyProgress(0) // Default for now
-            .build();
+                .overallProgress((int) completionPercent)
+                .lessonsCompleted(lessonsCompleted)
+                .testsCompleted(testsCompleted)
+                .totalLearningHours(totalLearningHours)
+                .completionPercentage(Math.round(completionPercent * 10.0) / 10.0)
+                .weeklyProgress(0) // Default for now
+                .build();
     }
 
     @Override
     public UserSpeakingResponse getUserSpeakingDetails(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
-                
+
         int totalSessions = 0;
         double avgScore = 0.0;
         int totalMinutes = 0;
         LocalDateTime lastDate = null;
         double bestScore = 0.0;
-        
+
         if (user instanceof Student student) {
             if (student.getSpeakingSessions() != null && !student.getSpeakingSessions().isEmpty()) {
                 totalSessions = student.getSpeakingSessions().size();
-                avgScore = student.getSpeakingSessions().stream().filter(s -> s.getScore() != null).mapToDouble(SpeakingSession::getScore).average().orElse(0.0);
-                bestScore = student.getSpeakingSessions().stream().filter(s -> s.getScore() != null).mapToDouble(SpeakingSession::getScore).max().orElse(0.0);
-                totalMinutes = student.getSpeakingSessions().stream().filter(s -> s.getDuration() != null).mapToInt(SpeakingSession::getDuration).sum() / 60;
-                lastDate = student.getSpeakingSessions().stream().map(SpeakingSession::getCreatedAt).max(LocalDateTime::compareTo).orElse(null);
+                avgScore = student.getSpeakingSessions().stream().filter(s -> s.getScore() != null)
+                        .mapToDouble(SpeakingSession::getScore).average().orElse(0.0);
+                bestScore = student.getSpeakingSessions().stream().filter(s -> s.getScore() != null)
+                        .mapToDouble(SpeakingSession::getScore).max().orElse(0.0);
+                totalMinutes = student.getSpeakingSessions().stream().filter(s -> s.getDuration() != null)
+                        .mapToInt(SpeakingSession::getDuration).sum() / 60;
+                lastDate = student.getSpeakingSessions().stream().map(SpeakingSession::getCreatedAt)
+                        .max(LocalDateTime::compareTo).orElse(null);
             }
         }
 
         return UserSpeakingResponse.builder()
-            .totalSpeakingSessions(totalSessions)
-            .averageSpeakingScore(Math.round(avgScore * 10.0) / 10.0)
-            .totalSpeakingMinutes(totalMinutes)
-            .lastSpeakingDate(lastDate)
-            .bestSpeakingScore(bestScore)
-            .build();
+                .totalSpeakingSessions(totalSessions)
+                .averageSpeakingScore(Math.round(avgScore * 10.0) / 10.0)
+                .totalSpeakingMinutes(totalMinutes)
+                .lastSpeakingDate(lastDate)
+                .bestSpeakingScore(bestScore)
+                .build();
     }
 
     @Override
     public UserGrammarResponse getUserGrammarDetails(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
-                
+
         int exercises = 0;
         double accuracy = 0.0;
-        int totalMistakes = 0; // mistakesCount does not exist
-        
+        int totalMistakes = 0;
+        double improvementPercentage = 0.0;
+
         if (user instanceof Student student) {
             if (student.getGrammarHistories() != null && !student.getGrammarHistories().isEmpty()) {
                 exercises = student.getGrammarHistories().size();
-                accuracy = student.getGrammarHistories().stream().filter(g -> g.getGrammarScore() != null).mapToDouble(GrammarHistory::getGrammarScore).average().orElse(0.0);
+                accuracy = student.getGrammarHistories().stream().filter(g -> g.getGrammarScore() != null)
+                        .mapToDouble(GrammarHistory::getGrammarScore).average().orElse(0.0);
                 totalMistakes = 0; // Not available in DB model
             }
         }
 
         return UserGrammarResponse.builder()
-            .exercisesCompleted(exercises)
-            .accuracy(Math.round(accuracy * 10.0) / 10.0)
-            .totalMistakes(totalMistakes)
-            .improvementPercentage(0.0)
-            .build();
+                .exercisesCompleted(exercises)
+                .accuracy(Math.round(accuracy * 10.0) / 10.0)
+                .totalMistakes(totalMistakes)
+                .improvementPercentage(Math.round(improvementPercentage * 10.0) / 10.0)
+                .build();
     }
 
     @Override
     public UserVocabularyResponse getUserVocabularyDetails(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
-                
+
         int wordsLearned = 0;
         int mastered = 0;
         int pending = 0;
         double score = 0.0;
-        
+
         if (user instanceof Student student) {
             if (student.getVocabularyList() != null && !student.getVocabularyList().isEmpty()) {
                 wordsLearned = student.getVocabularyList().size();
-                mastered = (int) student.getVocabularyList().stream().filter(v -> Boolean.TRUE.equals(v.getFavorite())).count();
+                mastered = (int) student.getVocabularyList().stream().filter(v -> Boolean.TRUE.equals(v.getFavorite()))
+                        .count();
                 pending = wordsLearned - mastered;
                 score = 0.0;
             }
         }
 
         return UserVocabularyResponse.builder()
-            .wordsLearned(wordsLearned)
-            .masteredWords(mastered)
-            .pendingRevision(pending)
-            .vocabularyScore(Math.round(score * 10.0) / 10.0)
-            .build();
+                .wordsLearned(wordsLearned)
+                .masteredWords(mastered)
+                .pendingRevision(pending)
+                .vocabularyScore(Math.round(score * 10.0) / 10.0)
+                .build();
     }
 
     @Override
     public UserDetailsResponse updateUserDetails(Long userId, AdminUserDetailsUpdateRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
-                
+
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
         user.setPhone(request.getPhone());
         user.setEnglishLevel(request.getEnglishLevel());
         user.setActive(request.isActive());
-        
+
         userRepository.save(user);
-        
+
         return getUserDetails(userId);
     }
 }
